@@ -2,6 +2,7 @@ package me.botsko.prism.appliers;
 
 import me.botsko.prism.Il8nHelper;
 import me.botsko.prism.Prism;
+import me.botsko.prism.actionlibs.ActionsQuery;
 import me.botsko.prism.actionlibs.QueryParameters;
 import me.botsko.prism.actions.GenericAction;
 import me.botsko.prism.api.BlockStateChange;
@@ -43,6 +44,7 @@ public class Preview implements Previewable {
     private final PrismProcessType processType;
     private final HashMap<Entity, Integer> entitiesMoved = new HashMap<>();
     private final List<Handler> worldChangeQueue = Collections.synchronizedList(new LinkedList<>());
+    private final List<Handler> updateRollbackedList = new ArrayList<>();
     private boolean isPreview = false;
     private int skippedBlockCount;
     private int changesAppliedCount;
@@ -218,9 +220,13 @@ public class Preview implements Previewable {
                             GenericAction action = (GenericAction) a;
                             if (processType.equals(PrismProcessType.ROLLBACK)) {
                                 result = action.applyRollback(player, parameters, isPreview);
+                                action.setRollbacked(true);
+                                updateRollbackedList.add(action);
                             }
                             if (processType.equals(PrismProcessType.RESTORE)) {
                                 result = action.applyRestore(player, parameters, isPreview);
+                                action.setRollbacked(false);
+                                updateRollbackedList.add(action);
                             }
                             if (processType.equals(PrismProcessType.UNDO)) {
                                 result = action.applyUndo(player, parameters, isPreview);
@@ -272,6 +278,8 @@ public class Preview implements Previewable {
                 if (isPreview) {
                     postProcessPreview();
                 } else {
+                    plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> new ActionsQuery(plugin).
+                            updateRollbacked(updateRollbackedList.toArray(new Handler[0])));
                     postProcess();
                 }
             }

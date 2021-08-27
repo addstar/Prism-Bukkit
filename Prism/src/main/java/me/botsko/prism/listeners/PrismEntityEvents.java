@@ -756,12 +756,12 @@ public class PrismEntityEvents extends BaseListener {
 
         if (event.getEntity() instanceof Player) {
             final Player player = (Player)event.getEntity();
-            RecordingQueue.addToQueue(ActionFactory.createBlockChange("entity-form", loc, block.getType(),
-                    block.getBlockData(), newState.getType(), newState.getBlockData(), player));
+            RecordingQueue.addToQueue(ActionFactory.createBlockChange("entity-form", block.getType(),
+                    block.getBlockData(), newState, player));
         } else {
             final String entity = event.getEntity().getType().name().toLowerCase();
-            RecordingQueue.addToQueue(ActionFactory.createBlockChange("entity-form", loc, block.getType(),
-                    block.getBlockData(), newState.getType(), newState.getBlockData(), entity));
+            RecordingQueue.addToQueue(ActionFactory.createBlockChange("entity-form", block.getType(),
+                    block.getBlockData(), newState, entity));
         }
     }
 

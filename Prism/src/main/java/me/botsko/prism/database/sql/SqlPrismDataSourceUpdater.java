@@ -108,4 +108,21 @@ public class SqlPrismDataSourceUpdater implements PrismDataSourceUpdater {
             dataSource.handleDataSourceException(e);
         }
     }
+
+    @Override
+    public void v8_to_v9() {
+        // Prepare query to be used
+        String query = "ALTER TABLE `" + prefix + "data` ADD COLUMN `rollbacked` boolean NOT NULL DEFAULT 0";
+
+        // Prepare database
+        try (
+                Connection conn = dataSource.getConnection();
+                PreparedStatement st = conn.prepareStatement(query)
+        ) {
+            // Add player index to speed up player lookups.
+            st.executeUpdate(query);
+        } catch (SQLException e) {
+            dataSource.handleDataSourceException(e);
+        }
+    }
 }

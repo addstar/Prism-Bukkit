@@ -165,4 +165,8 @@ public interface Handler {
      */
     String getCustomDesc();
 
+    boolean isRollbacked();
+
+    void setRollbacked(boolean rollbacked);
+
 }

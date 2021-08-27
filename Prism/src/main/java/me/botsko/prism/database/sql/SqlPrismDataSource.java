@@ -12,6 +12,7 @@ import me.botsko.prism.database.SelectIdQuery;
 import me.botsko.prism.database.SelectProcessActionQuery;
 import me.botsko.prism.database.SelectQuery;
 import me.botsko.prism.database.SettingsQuery;
+import me.botsko.prism.database.UpdateQuery;
 import org.bukkit.configuration.ConfigurationSection;
 
 import javax.annotation.Nonnull;
@@ -173,7 +174,7 @@ public abstract class SqlPrismDataSource implements PrismDataSource {
                     + "`world_id` int(10) unsigned NOT NULL," + "`x` int(11) NOT NULL," + "`y` int(11) NOT NULL,"
                     + "`z` int(11) NOT NULL," + "`block_id` mediumint(5) DEFAULT NULL,"
                     + "`block_subid` mediumint(5) DEFAULT NULL," + "`old_block_id` mediumint(5) DEFAULT NULL,"
-                    + "`old_block_subid` mediumint(5) DEFAULT NULL," + "PRIMARY KEY (`id`)," + "KEY `epoch` (`epoch`),"
+                    + "`old_block_subid` mediumint(5) DEFAULT NULL," + "`rollbacked` boolean NOT NULL DEFAULT 0," + "PRIMARY KEY (`id`)," + "KEY `epoch` (`epoch`),"
                     + "KEY  `location` (`world_id`, `x`, `z`, `y`, `action_id`),"
                     + "KEY  `player` (`player_id`)"
                     + ") ENGINE=InnoDB  DEFAULT CHARSET=utf8;";
@@ -393,6 +394,11 @@ public abstract class SqlPrismDataSource implements PrismDataSource {
     @Override
     public SelectProcessActionQuery createProcessQuery() {
         return new SqlSelectProcessQuery(this);
+    }
+
+    @Override
+    public UpdateQuery createUpdateQuery() {
+        return new SqlUpdateQuery(this);
     }
 
     public InsertQuery getDataInsertionQuery() {

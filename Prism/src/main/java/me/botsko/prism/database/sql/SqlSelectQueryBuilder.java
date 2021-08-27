@@ -75,6 +75,7 @@ public class SqlSelectQueryBuilder extends QueryBuilder implements SelectQuery {
             columns.add("MIN(block_subid) block_subid");
             columns.add("MIN(old_block_id) old_block_id");
             columns.add("MIN(old_block_subid) old_block_subid");
+            columns.add("MAX(rollbacked) rollbacked");
             columns.add("MIN(data) data");
             columns.add("MIN(HEX(player_uuid)) AS uuid");
         } else {
@@ -82,6 +83,7 @@ public class SqlSelectQueryBuilder extends QueryBuilder implements SelectQuery {
             columns.add("block_subid");
             columns.add("old_block_id");
             columns.add("old_block_subid");
+            columns.add("rollbacked");
             columns.add("data");
             columns.add("HEX(player_uuid) AS uuid");
         }
@@ -334,7 +336,7 @@ public class SqlSelectQueryBuilder extends QueryBuilder implements SelectQuery {
     protected String group() {
         if (shouldGroup) {
             return " GROUP BY " + tableNameData + ".action_id, " + tableNameData + ".player_id, " + tableNameData
-                    + ".block_id, ex.data, DATE(FROM_UNIXTIME(" + tableNameData + ".epoch))";
+                    + ".block_id, " + tableNameData + ".rollbacked, ex.data, DATE(FROM_UNIXTIME(" + tableNameData + ".epoch))";
         }
         return "";
     }
@@ -535,7 +537,9 @@ public class SqlSelectQueryBuilder extends QueryBuilder implements SelectQuery {
                     int oldBlockId = rs.getInt(11);
                     int oldBlockSubId = rs.getInt(12);
 
-                    String extraData = rs.getString(13);
+                    baseHandler.setRollbacked(rs.getBoolean(13));
+
+                    String extraData = rs.getString(14);
 
                     boolean validBlockId = false;
                     boolean validOldBlockId = false;
@@ -637,7 +641,7 @@ public class SqlSelectQueryBuilder extends QueryBuilder implements SelectQuery {
                     try {
                         // Calls UUID.fromString, must handle potential exceptions
                         OfflinePlayer offline = Bukkit.getOfflinePlayer(
-                                SqlPlayerIdentificationHelper.uuidFromDbString(rs.getString(14)));
+                                SqlPlayerIdentificationHelper.uuidFromDbString(rs.getString(15)));
 
                         // Fake player
                         if (offline.hasPlayedBefore()) {
@@ -650,7 +654,7 @@ public class SqlSelectQueryBuilder extends QueryBuilder implements SelectQuery {
                     // Set aggregate counts if a lookup
                     int aggregated = 0;
                     if (shouldGroup) {
-                        aggregated = rs.getInt(15);
+                        aggregated = rs.getInt(16);
                     }
                     baseHandler.setAggregateCount(aggregated);
 

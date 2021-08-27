@@ -10,7 +10,7 @@ public class DatabaseUpdater {
 
 
     protected final Prism plugin;
-    private final int currentDbSchemaVersion = 8;
+    private final int currentDbSchemaVersion = 9;
     private final ArrayList<Runnable> updates = new ArrayList<>(currentDbSchemaVersion);
 
     /**
@@ -28,6 +28,7 @@ public class DatabaseUpdater {
         updates.add(prismDataSourceUpdater::v5_to_v6);
         updates.add(prismDataSourceUpdater::v6_to_v7);
         updates.add(prismDataSourceUpdater::v7_to_v8);
+        updates.add(prismDataSourceUpdater::v8_to_v9);
     }
 
     private int getClientDbSchemaVersion() {

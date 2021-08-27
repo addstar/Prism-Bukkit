@@ -44,6 +44,7 @@ public class MySqlSelectQueryBuilder extends SqlSelectQueryBuilder {
         columns.add("any_value(block_subid) block_subid");
         columns.add("any_value(old_block_id) old_block_id");
         columns.add("any_value(old_block_subid) old_block_subid");
+        columns.add("MAX(rollbacked) rollbacked");
         columns.add("any_value(data) data");
         columns.add("any_value(HEX(player_uuid)) AS uuid");
 
