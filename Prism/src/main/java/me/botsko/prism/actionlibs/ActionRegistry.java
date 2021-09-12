@@ -12,6 +12,7 @@ import me.botsko.prism.actions.HangingItemAction;
 import me.botsko.prism.actions.ItemStackAction;
 import me.botsko.prism.actions.PlayerAction;
 import me.botsko.prism.actions.PlayerDeathAction;
+import me.botsko.prism.actions.PortalCreateAction;
 import me.botsko.prism.actions.PrismProcessAction;
 import me.botsko.prism.actions.PrismRollbackAction;
 import me.botsko.prism.actions.SignAction;
@@ -255,6 +256,8 @@ public class ActionRegistry {
                 PlayerAction.class, Il8nHelper.getRawMessage("changed_game_mode")));
         registerAction(new ActionTypeImpl("player-teleport", false, false, false,
                 EntityTravelAction.class, Il8nHelper.getRawMessage("teleported")));
+        registerAction(new ActionTypeImpl("portal-create", true, true, true,
+                PortalCreateAction.class, "created portal"));
         registerAction(new ActionTypeImpl("potion-splash", false, false, false,
                 PlayerAction.class, Il8nHelper.getRawMessage("potion-throw")));
         registerAction(new ActionTypeImpl("prism-drain", false, true, true,

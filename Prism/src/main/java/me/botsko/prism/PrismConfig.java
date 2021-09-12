@@ -177,6 +177,7 @@ public class PrismConfig extends ConfigBase {
         config.addDefault("prism.tracking.player-quit", false);
         config.addDefault("prism.tracking.player-teleport", false);
         config.addDefault("prism.tracking.player-trade", false);
+        config.addDefault("prism.tracking.portal-create", true);
         config.addDefault("prism.tracking.potion-splash", true);
         config.addDefault("prism.tracking.sheep-eat", true);
         config.addDefault("prism.tracking.sign-change", true);
