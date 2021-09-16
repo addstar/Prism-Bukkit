@@ -80,7 +80,7 @@ permissions:
     prism.alerts.ignore:
         default: false
     prism.override-max-lookup-radius:
-        default: false
+        default: op
     prism.override-max-applier-radius:
         default: false
     prism.ignore.tracking.block-break:

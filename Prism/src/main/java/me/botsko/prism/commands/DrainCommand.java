@@ -32,7 +32,7 @@ public class DrainCommand implements SubHandler {
     public void handle(CallInfo call) {
 
         String drainType = "";
-        int radius = plugin.getConfig().getInt("prism.drain.default-radius");
+        int radius = plugin.config.drainCommandConfig.defaultRadius;
         if (call.getArgs().length == 3) {
             if (call.getArg(1).equalsIgnoreCase("water") || call.getArg(1).equalsIgnoreCase("lava")) {
                 drainType = call.getArg(1);
@@ -120,7 +120,7 @@ public class DrainCommand implements SubHandler {
         if (TypeUtils.isNumeric(radiusArg)) {
             final int _tmp_radius = Integer.parseInt(radiusArg);
             if (_tmp_radius > 0) {
-                if (_tmp_radius > plugin.getConfig().getInt("prism.drain.max-radius")) {
+                if (_tmp_radius > plugin.config.drainCommandConfig.maxRadius) {
                     Prism.messenger.sendMessage(call.getPlayer(),
                             Prism.messenger.playerError(Il8nHelper.getMessage("exceed-max-radius")));
                     return 0;

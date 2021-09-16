@@ -84,8 +84,7 @@ public class MaterialState {
     public static void setItemDamage(ItemStack stack, int damage) {
         ItemMeta meta = Bukkit.getItemFactory().getItemMeta(stack.getType());
 
-        if (meta instanceof Damageable) {
-            Damageable d = (Damageable) meta;
+        if (meta instanceof Damageable d) {
 
             d.setDamage(damage);
             stack.setItemMeta(meta);

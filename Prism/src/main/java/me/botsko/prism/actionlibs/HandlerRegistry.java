@@ -42,12 +42,11 @@ public class HandlerRegistry {
     public void registerCustomHandler(Plugin apiPlugin, Class<? extends Handler> handlerClass)
             throws InvalidActionException {
 
-        final List<String> allowedPlugins = Prism.config.getStringList("prism.tracking.api.allowed-plugins");
+        final List<String> allowedPlugins = Prism.getInstance().config.trackingConfig.allowedPlugins;
         if (!allowedPlugins.contains(apiPlugin.getName())) {
             throw new InvalidActionException("Registering action type not allowed. Plugin '" + apiPlugin.getName()
                     + "' is not in list of allowed plugins.");
         }
-
         final String[] names = handlerClass.getName().split("\\.");
         if (names.length > 0) {
             registeredHandlers.add(handlerClass);
@@ -63,7 +62,11 @@ public class HandlerRegistry {
      */
     public <T extends Handler> T create(Class<T> handlerClazz) {
         try {
-            return handlerClazz.getDeclaredConstructor().newInstance();
+            if (registeredHandlers.contains(handlerClazz)) {
+                return handlerClazz.getDeclaredConstructor().newInstance();
+            } else {
+                throw new IllegalArgumentException("Failed to construct handler for " + handlerClazz.getSimpleName());
+            }
         } catch (Exception e) {
             throw new IllegalArgumentException("Failed to construct handler for " + handlerClazz.getSimpleName(), e);
         }

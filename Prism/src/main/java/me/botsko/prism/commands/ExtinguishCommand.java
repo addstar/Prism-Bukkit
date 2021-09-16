@@ -32,12 +32,12 @@ public class ExtinguishCommand implements SubHandler {
     @Override
     public void handle(CallInfo call) {
 
-        int radius = plugin.getConfig().getInt("prism.ex.default-radius");
+        int radius = plugin.config.extinguishCommandConfig.defaultRadius;
         if (call.getArgs().length == 2) {
             if (TypeUtils.isNumeric(call.getArg(1))) {
                 final int _tmp_radius = Integer.parseInt(call.getArg(1));
                 if (_tmp_radius > 0) {
-                    if (_tmp_radius > plugin.getConfig().getInt("prism.ex.max-radius")) {
+                    if (_tmp_radius > plugin.config.extinguishCommandConfig.maxRadius) {
                         Prism.messenger.sendMessage(call.getPlayer(),
                                 Prism.messenger.playerError(Il8nHelper.getMessage("radius-max")));
                         return;

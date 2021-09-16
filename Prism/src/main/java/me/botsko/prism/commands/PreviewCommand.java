@@ -5,6 +5,7 @@ import me.botsko.prism.Prism;
 import me.botsko.prism.actionlibs.ActionsQuery;
 import me.botsko.prism.actionlibs.QueryParameters;
 import me.botsko.prism.actionlibs.QueryResult;
+import me.botsko.prism.api.Result;
 import me.botsko.prism.api.actions.PrismProcessType;
 import me.botsko.prism.appliers.PreviewSession;
 import me.botsko.prism.appliers.Previewable;
@@ -26,7 +27,7 @@ public class PreviewCommand extends AbstractCommand {
     private final List<String> secondaries;
 
     /**
-     * Contructor.
+     * Constructor.
      *
      * @param plugin Prism
      */
@@ -80,9 +81,9 @@ public class PreviewCommand extends AbstractCommand {
             if (call.getArg(1).equalsIgnoreCase("rollback") || call.getArg(1).equalsIgnoreCase("restore")
                     || call.getArg(1).equalsIgnoreCase("rb") || call.getArg(1).equalsIgnoreCase("rs")) {
 
-                final QueryParameters parameters = PreprocessArgs.process(plugin, call.getPlayer(), call.getArgs(),
-                        PrismProcessType.ROLLBACK, 2,
-                        !plugin.getConfig().getBoolean("prism.queries.never-use-defaults"));
+                final QueryParameters parameters = PreprocessArgs.process(plugin.config, call.getPlayer(),
+                        call.getArgs(), PrismProcessType.ROLLBACK, 2,
+                        !plugin.config.parameterConfig.neverUseDefaults);
                 if (parameters == null) {
                     return;
                 }
@@ -96,7 +97,7 @@ public class PreviewCommand extends AbstractCommand {
                 StringBuilder defaultsReminder = checkIfDefaultUsed(parameters);
                 Prism.messenger.sendMessage(call.getPlayer(),Prism.messenger
                         .playerSubduedHeaderMsg(
-                                Il8nHelper.getMessage("queryparameter.defaults.prefix",
+                                Il8nHelper.getMessage("params-defaults-prefix",
                                         defaultsReminder.toString())));
                 plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
 
@@ -108,13 +109,11 @@ public class PreviewCommand extends AbstractCommand {
                     if (call.getArg(1).equalsIgnoreCase("rollback")
                             || call.getArg(1).equalsIgnoreCase("rb")) {
                         handleRollBack(call, parameters, results, audience);
-                        assert (parameters.getProcessType() == PrismProcessType.ROLLBACK); //todo remove debug
                     }
                     // Restore
                     if (call.getArg(1).equalsIgnoreCase("restore")
                             || call.getArg(1).equalsIgnoreCase("rs")) {
                         handleRestore(call, parameters, results, audience);
-                        assert (parameters.getProcessType() == PrismProcessType.RESTORE);//todo remove debug
                     }
                 });
                 return;
@@ -124,7 +123,7 @@ public class PreviewCommand extends AbstractCommand {
         }
     }
 
-    private void handleRestore(CallInfo call, QueryParameters parameters, QueryResult results, Audience audience) {
+    private void handleRestore(CallInfo call, QueryParameters parameters, Result results, Audience audience) {
         parameters.setProcessType(PrismProcessType.RESTORE);
         if (!results.getActionResults().isEmpty()) {
 
@@ -146,7 +145,7 @@ public class PreviewCommand extends AbstractCommand {
 
 
     private void handleRollBack(final CallInfo call, final QueryParameters parameters,
-                                final QueryResult results, final Audience audience) {
+                                final Result results, final Audience audience) {
         parameters.setProcessType(PrismProcessType.ROLLBACK);
         if (!results.getActionResults().isEmpty()) {
 

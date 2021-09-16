@@ -165,7 +165,7 @@ public class Messenger {
      */
     public TextComponent playerSuccess(Component msg) {
         if (msg != null) {
-            return Component.text(pluginName + " ")
+            return Component.text("[" + pluginName + "]" + " ")
                     .color(headerColor)
                     .append(msg.colorIfAbsent(success));
         }

@@ -9,6 +9,7 @@ import org.bukkit.block.data.BlockData;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Created for use for the Add5tar MC Minecraft server
@@ -175,7 +176,7 @@ public class TabLibraryHelper {
      * @param material Material 1
      * @param material Material 2
      */
-    protected static final EnumMap<Material, Material> baseMaterials = new EnumMap<>(Material.class);
+    protected static final Map<Material, Material> baseMaterials = new EnumMap<>(Material.class);
 
     static {
         baseMaterials.put(Material.GRASS_BLOCK, Material.DIRT);

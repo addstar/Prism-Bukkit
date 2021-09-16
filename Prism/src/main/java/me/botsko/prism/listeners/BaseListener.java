@@ -3,6 +3,7 @@ package me.botsko.prism.listeners;
 import me.botsko.prism.Prism;
 import me.botsko.prism.actionlibs.ActionFactory;
 import me.botsko.prism.actionlibs.RecordingQueue;
+import me.botsko.prism.api.actions.ActionType;
 import me.botsko.prism.utils.MaterialTag;
 import me.botsko.prism.utils.block.Utilities;
 import org.bukkit.Material;
@@ -10,8 +11,6 @@ import org.bukkit.block.Block;
 import org.bukkit.block.data.Bisected;
 import org.bukkit.block.data.type.Door;
 import org.bukkit.event.Listener;
-
-import java.util.List;
 
 /**
  * Created for the Prism-Bukkit Project.
@@ -25,7 +24,8 @@ public abstract class BaseListener implements Listener {
         this.plugin = plugin;
     }
 
-    protected void contructBlockEvent(final String parentAction, final String cause, final List<Block> blockList) {
+    protected void constructBlockEvent(final ActionType parentAction, final String cause,
+                                       final Iterable<Block> blockList) {
         final PrismBlockEvents be = new PrismBlockEvents(plugin); //todo is this necessary?
         for (Block block : blockList) {
             // don't bother record upper doors.
@@ -45,8 +45,9 @@ public abstract class BaseListener implements Listener {
             // note: done before the container so a "rewind" for rollback will
             // work properly
             final Block b2 = block;
-            be.forEachItem(block, (i, s) -> RecordingQueue.addToQueue(ActionFactory.createItemStack("item-remove",
-                    i, i.getAmount(), 0, null, b2.getLocation(), cause)));
+            be.forEachItem(block, (i, s) ->
+                    RecordingQueue.addToQueue(ActionFactory.createItemStack(ActionType.ITEM_REMOVE,
+                            i, i.getAmount(), 0, null, b2.getLocation(), cause)));
             // be.logItemRemoveFromDestroyedContainer( name, block );
             RecordingQueue.addToQueue(ActionFactory.createBlock(parentAction, block, cause));
             // look for relationships

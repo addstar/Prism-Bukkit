@@ -1,5 +1,6 @@
 package me.botsko.prism.utils;
 
+import me.botsko.prism.Prism;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Tag;
@@ -10,10 +11,7 @@ import java.util.EnumSet;
 import java.util.Set;
 
 public class MaterialTag implements Tag<Material> {
-    public static final Tag<Material> DYES = new MaterialTag(Material.INK_SAC, Material.RED_DYE, Material.GREEN_DYE,
-            Material.COCOA_BEANS, Material.LAPIS_LAZULI, Material.PURPLE_DYE, Material.CYAN_DYE,
-            Material.LIGHT_GRAY_DYE, Material.GRAY_DYE, Material.PINK_DYE, Material.LIME_DYE, Material.YELLOW_DYE,
-            Material.LIGHT_BLUE_DYE, Material.MAGENTA_DYE, Material.ORANGE_DYE, Material.BONE_MEAL);
+    public static final Tag<Material> DYES = new MaterialTag("_DYE",MatchMode.SUFFIX);
     public static final MaterialTag CORAL_WALL_FANS = new MaterialTag(Material.DEAD_BRAIN_CORAL_WALL_FAN,
             Material.DEAD_BUBBLE_CORAL_WALL_FAN, Material.DEAD_FIRE_CORAL_WALL_FAN, Material.DEAD_HORN_CORAL_WALL_FAN,
             Material.DEAD_TUBE_CORAL_WALL_FAN, Material.DEAD_BRAIN_CORAL_WALL_FAN,
@@ -63,7 +61,7 @@ public class MaterialTag implements Tag<Material> {
     public static final MaterialTag GROWABLE = new MaterialTag(CROPS).append(PLANTS).append(Material.CACTUS)
             .append(Tag.SAPLINGS);
     private final EnumSet<Material> materials;
-    private final NamespacedKey key = null;
+    private final NamespacedKey key;
 
     /**
      * Constructor.
@@ -72,6 +70,7 @@ public class MaterialTag implements Tag<Material> {
     @SuppressWarnings("unused")
     public MaterialTag(EnumSet<Material> materials) {
         this.materials = materials.clone();
+        key = new NamespacedKey(Prism.getInstance(),"material_tags");
     }
 
     /**
@@ -82,6 +81,7 @@ public class MaterialTag implements Tag<Material> {
     public MaterialTag(Tag<Material>... materialTags) {
         this.materials = EnumSet.noneOf(Material.class);
         append(materialTags);
+        key = new NamespacedKey(Prism.getInstance(),"material_tags");
     }
 
     /**
@@ -92,6 +92,8 @@ public class MaterialTag implements Tag<Material> {
     public MaterialTag(Material... materials) {
         this.materials = EnumSet.noneOf(Material.class);
         append(materials);
+        key = new NamespacedKey(Prism.getInstance(),"material_tags");
+
     }
 
     /**
@@ -103,6 +105,8 @@ public class MaterialTag implements Tag<Material> {
     public MaterialTag(String segment, MatchMode mode) {
         this.materials = EnumSet.noneOf(Material.class);
         append(segment, mode);
+        key = new NamespacedKey(Prism.getInstance(),"material_tags");
+
     }
 
     @NotNull

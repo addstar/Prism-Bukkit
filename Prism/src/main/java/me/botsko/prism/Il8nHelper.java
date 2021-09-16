@@ -34,7 +34,7 @@ public class Il8nHelper {
      */
     public static TextComponent getMessage(@PropertyKey(resourceBundle = "languages.message") String key,
                                            String extra) {
-        return Component.text(getRawMessage(key + extra));
+        return Component.text(getRawMessage(key) + " " + extra);
     }
 
     /**
@@ -49,15 +49,16 @@ public class Il8nHelper {
         try {
             return resourceBundle.getString(key);
         } catch (MissingResourceException e) {
-            Prism.log("Missing Resource " + e.getMessage());
+            PrismLogHandler.log("Missing Resource " + e.getMessage());
             return key;
         }
     }
 
     /**
-     * Produces a TexComponent that can accept typical java String.format type replacement before its created.
-     * @param key Il8n key
-     * @param args Object to insert.
+     * Produces a TexComponent that can accept typical java String.format type replacement before its created.  This
+     * uses {@link java.util.Formatter}  printf-style format strings.
+     * @param key Il8n key containing printf style formatting marks
+     * @param args Objects to insert.
      * @return TextComponent
      */
     public static TextComponent formatMessage(@PropertyKey(resourceBundle = "languages.message") String key,
@@ -65,15 +66,16 @@ public class Il8nHelper {
         if (resourceBundle == null) {
             return Component.text(key);
         }
+
         try {
             String format = resourceBundle.getString(key);
             String out = String.format(format, args);
             return Component.text(out);
         } catch (MissingResourceException e) {
-            Prism.log("Missing Resource " + e.getMessage());
+            PrismLogHandler.log("Missing Resource " + e.getMessage());
             return Component.text(key);
         } catch (MissingFormatArgumentException e) {
-            Prism.log("Missing Format Argument " + e.getMessage());
+            PrismLogHandler.log("Missing Format Argument " + e.getMessage());
             return getMessage(key);
         }
     }

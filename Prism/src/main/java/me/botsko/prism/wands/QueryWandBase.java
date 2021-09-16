@@ -4,6 +4,7 @@ import me.botsko.prism.Prism;
 import me.botsko.prism.actionlibs.ActionsQuery;
 import me.botsko.prism.actionlibs.QueryParameters;
 import me.botsko.prism.actionlibs.QueryResult;
+import me.botsko.prism.api.PrismParameters;
 import me.botsko.prism.api.actions.PrismProcessType;
 import me.botsko.prism.commandlibs.PreprocessArgs;
 import org.bukkit.block.Block;
@@ -48,7 +49,8 @@ public abstract class QueryWandBase extends WandBase {
         final PrismProcessType processType = this instanceof RollbackWand ? PrismProcessType.ROLLBACK
                 : this instanceof RestoreWand ? PrismProcessType.RESTORE : PrismProcessType.LOOKUP;
 
-        final QueryParameters params = PreprocessArgs.process(plugin, sender, args, processType, argStart, false, true);
+        final QueryParameters params = PreprocessArgs.process(plugin.config, sender, args, processType, argStart,
+                false, true);
         if (params == null) {
             return false;
         } else {
@@ -58,7 +60,7 @@ public abstract class QueryWandBase extends WandBase {
         }
     }
 
-    QueryResult getResult(QueryParameters params, Player player) {
+    QueryResult getResult(PrismParameters params, Player player) {
         boolean timeDefault = false;
         for (final String _default : params.getDefaultsUsed()) {
             if (_default.startsWith("t:")) {

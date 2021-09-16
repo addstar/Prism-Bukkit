@@ -2,12 +2,16 @@ package me.botsko.prism.actions;
 
 import com.google.gson.JsonObject;
 import me.botsko.prism.Prism;
-import me.botsko.prism.actions.entity.EntitySerializer;
-import me.botsko.prism.actions.entity.EntitySerializerFactory;
+import me.botsko.prism.PrismLogHandler;
 import me.botsko.prism.api.ChangeResult;
 import me.botsko.prism.api.ChangeResultType;
 import me.botsko.prism.api.PrismParameters;
 import me.botsko.prism.appliers.ChangeResultImpl;
+import me.botsko.prism.serializers.SerializationHelper;
+import me.botsko.prism.serializers.entity.EntitySerializerFactory;
+import me.botsko.prism.serializers.entity.EntitySerializerInterface;
+import me.botsko.prism.serializers.entity.SheepSerializer;
+import org.bukkit.DyeColor;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -16,7 +20,7 @@ import org.jetbrains.annotations.Nullable;
 
 public class EntityAction extends GenericAction {
 
-    private EntitySerializer serializer;
+    private EntitySerializerInterface serializer;
 
     /**
      * Constructor.
@@ -40,15 +44,20 @@ public class EntityAction extends GenericAction {
      * @param entity Entity
      * @param dyeUsed String
      */
-    public void setEntity(Entity entity, String dyeUsed) {
+    public void setEntity(Entity entity, DyeColor dyeUsed) {
 
         // Build an object for the specific details of this action
-        if (entity != null && entity.getType() != null && entity.getType().name() != null) {
+        if (entity != null) {
+            entity.getType();
+            entity.getType();
             setLoc(entity.getLocation());
-
-            serializer = EntitySerializerFactory.getSerializer(entity.getType());
+            serializer = EntitySerializerFactory.getSerializer(entity);
             serializer.serialize(entity);
-            serializer.setNewColor(dyeUsed);
+            if (dyeUsed != null) {
+                if (serializer instanceof SheepSerializer) {
+                    ((SheepSerializer) serializer).setColor(dyeUsed);
+                }
+            }
         }
     }
 
@@ -68,14 +77,16 @@ public class EntityAction extends GenericAction {
 
     @Override
     public String serialize() {
-        return gson().toJson(serializer);
+        return SerializationHelper.gson().toJson(serializer);
     }
 
     @Override
     public void deserialize(String data) {
         if (data != null && data.startsWith("{")) {
-            String entityName = gson().fromJson(data, JsonObject.class).get("entityName").getAsString();
-            serializer = gson().fromJson(data, EntitySerializerFactory.getSerlializingClass(getEntityType(entityName)));
+            String entityName = SerializationHelper.gson()
+                    .fromJson(data, JsonObject.class).get("entityName").getAsString();
+            serializer = SerializationHelper.gson()
+                    .fromJson(data, EntitySerializerFactory.getSerializingClass(getEntityType(entityName)));
         }
     }
 
@@ -103,7 +114,10 @@ public class EntityAction extends GenericAction {
             if (!isPreview) {
                 final Location loc = getLoc().add(0.5, 0.0, 0.5);
                 if (entityType.getEntityClass() != null && loc.getWorld() != null) {
+                    PrismLogHandler.debug("Spawning on Rollback: " + SerializationHelper.gson().toJson(serializer));
                     loc.getWorld().spawn(loc, entityType.getEntityClass(), entity -> serializer.deserialize(entity));
+                    //todo this doesnt work for some reason in terms of applying serializations on spawn....
+                    // Villagers dont seem to appear as per professions would require.
                 } else {
                     return new ChangeResultImpl(ChangeResultType.SKIPPED, null);
                 }

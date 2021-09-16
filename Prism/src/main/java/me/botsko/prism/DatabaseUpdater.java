@@ -1,26 +1,21 @@
 package me.botsko.prism;
 
+import me.botsko.prism.database.PrismDataSource;
 import me.botsko.prism.database.PrismDataSourceUpdater;
-import me.botsko.prism.database.PrismDatabaseFactory;
 import me.botsko.prism.settings.Settings;
 
 import java.util.ArrayList;
 
 public class DatabaseUpdater {
 
-
-    protected final Prism plugin;
     private final int currentDbSchemaVersion = 8;
     private final ArrayList<Runnable> updates = new ArrayList<>(currentDbSchemaVersion);
 
     /**
      * The plugin.
-     *
-     * @param plugin Prism.
      */
-    DatabaseUpdater(Prism plugin) {
-        this.plugin = plugin;
-        PrismDataSourceUpdater prismDataSourceUpdater = PrismDatabaseFactory.createUpdater(Prism.config);
+    public DatabaseUpdater(PrismDataSource dataSource) {
+        PrismDataSourceUpdater prismDataSourceUpdater = dataSource.getUpdater();
         updates.add(prismDataSourceUpdater::v1_to_v2);
         updates.add(prismDataSourceUpdater::v2_to_v3);
         updates.add(prismDataSourceUpdater::v3_to_v4);
@@ -41,7 +36,7 @@ public class DatabaseUpdater {
     /**
      * Run any queries lower than current currentDbSchemaVersion.
      */
-    void applyUpdates() {
+    public void applyUpdates(PrismDataSource dataSource) {
 
         int clientSchemaVer = getClientDbSchemaVersion();
 
@@ -49,13 +44,13 @@ public class DatabaseUpdater {
             Runnable update = updates.get(i - 1);
 
             if (update != null) {
-                Prism.log("Updating prism schema v" + i + " to v" + (i + 1) + ". This make take a while.");
+                PrismLogHandler.log("Updating prism schema v" + i + " to v" + (i + 1) + ". This make take a while.");
                 update.run();
             }
         }
 
         // Save current version
-        Settings.saveSetting("schema_ver", "" + currentDbSchemaVersion);
-        Prism.log("Update check complete: Schema v" + currentDbSchemaVersion);
+        dataSource.setDatabaseSchemaVersion(currentDbSchemaVersion);
+        PrismLogHandler.log("Update check complete: Schema v" + currentDbSchemaVersion);
     }
 }

@@ -1,3 +1,6 @@
+.. _usage:
+
+
 Hooking the API
 ===============
 

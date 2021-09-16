@@ -8,6 +8,7 @@ import org.bukkit.entity.Boat;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.minecart.CommandMinecart;
 import org.bukkit.entity.minecart.ExplosiveMinecart;
 import org.bukkit.entity.minecart.HopperMinecart;
 import org.bukkit.entity.minecart.PoweredMinecart;
@@ -68,29 +69,17 @@ public class VehicleAction extends GenericAction {
     public ChangeResult applyRollback(Player player, PrismParameters parameters, boolean isPreview) {
         Entity vehicle = null;
         switch (vehicleName) {
-            case "powered minecart":
-                vehicle = getWorld().spawn(getLoc(), PoweredMinecart.class);
-                break;
-            case "storage minecart":
-                vehicle = getWorld().spawn(getLoc(), StorageMinecart.class);
-                break;
-            case "tnt minecart":
-                vehicle = getWorld().spawn(getLoc(), ExplosiveMinecart.class);
-                break;
-            case "spawner minecart":
-                vehicle = getWorld().spawn(getLoc(), SpawnerMinecart.class);
-                break;
-            case "minecart hopper":
-                vehicle = getWorld().spawn(getLoc(), HopperMinecart.class);
-                break;
-            case "minecart":
-                vehicle = getWorld().spawn(getLoc(), Minecart.class);
-                break;
-            case "boat":
-                vehicle = getWorld().spawn(getLoc(), Boat.class);
-                break;
-            default:
-                //null
+            case "command block minecart" -> vehicle = getWorld().spawn(getLoc(), CommandMinecart.class);
+            case "powered minecart" -> vehicle = getWorld().spawn(getLoc(), PoweredMinecart.class);
+            case "storage minecart" -> vehicle = getWorld().spawn(getLoc(), StorageMinecart.class);
+            case "tnt minecart" -> vehicle = getWorld().spawn(getLoc(), ExplosiveMinecart.class);
+            case "spawner minecart" -> vehicle = getWorld().spawn(getLoc(), SpawnerMinecart.class);
+            case "minecart hopper" -> vehicle = getWorld().spawn(getLoc(), HopperMinecart.class);
+            case "minecart" -> vehicle = getWorld().spawn(getLoc(), Minecart.class);
+            case "boat" -> vehicle = getWorld().spawn(getLoc(), Boat.class);
+            default -> {
+            }
+            //null
         }
         if (vehicle != null) {
             return new ChangeResultImpl(ChangeResultType.APPLIED, null);

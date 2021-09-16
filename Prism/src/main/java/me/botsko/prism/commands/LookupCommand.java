@@ -8,7 +8,6 @@ import me.botsko.prism.actionlibs.QueryParameters;
 import me.botsko.prism.actionlibs.QueryResult;
 import me.botsko.prism.api.actions.Handler;
 import me.botsko.prism.api.actions.PrismProcessType;
-import me.botsko.prism.api.commands.Flag;
 import me.botsko.prism.commandlibs.CallInfo;
 import me.botsko.prism.commandlibs.PreprocessArgs;
 import me.botsko.prism.commandlibs.SubHandler;
@@ -20,7 +19,6 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
 import java.util.List;
-import java.util.regex.Pattern;
 
 public class LookupCommand implements SubHandler {
 
@@ -43,10 +41,10 @@ public class LookupCommand implements SubHandler {
     public void handle(final CallInfo call) {
 
         // Process and validate all of the arguments
-        final QueryParameters parameters = PreprocessArgs.process(plugin, call.getSender(),
+        final QueryParameters parameters = PreprocessArgs.process(plugin.config, call.getSender(),
                 call.getArgs(),
                 PrismProcessType.LOOKUP, 1,
-                !plugin.getConfig().getBoolean("prism.queries.never-use-defaults"));
+                !plugin.config.parameterConfig.neverUseDefaults);
         if (parameters == null) {
             return;
         }
@@ -58,7 +56,8 @@ public class LookupCommand implements SubHandler {
             final List<String> defaultsUsed = parameters.getDefaultsUsed();
             StringBuilder defaultsReminder = new StringBuilder();
             if (!defaultsUsed.isEmpty()) {
-                defaultsReminder.append(Il8nHelper.getRawMessage("queryparameter.defaults.prefix"));
+                String prefix = Il8nHelper.getRawMessage("params-defaults-prefix");
+                defaultsReminder.append(prefix);
                 for (final String d : defaultsUsed) {
                     defaultsReminder.append(" ").append(d);
                 }
@@ -86,19 +85,22 @@ public class LookupCommand implements SubHandler {
                             .playerHeaderMsg(
                                     Il8nHelper.getMessage("lookup-share-message")
                                             .color(NamedTextColor.GOLD)
-                                            .replaceText(Pattern.compile("<sender>"), builder ->
-                                                    Component.text().content(call.getSender().getName())
-                                                            .color(NamedTextColor.YELLOW)
+                                            .replaceText(builder -> builder.match("<sender>").replacement(
+                                                    Component.text(call.getSender().getName())
+                                            .color(NamedTextColor.YELLOW)
                                                             .decoration(TextDecoration.ITALIC,
-                                                                    TextDecoration.State.TRUE), 1)));
+                                                                    TextDecoration.State.TRUE)))
+                            )
+                    );
                 } else if (sharingWithPlayers.length() > 0) {
                     Component component = Il8nHelper.getMessage("lookup-share-to-message")
                             .color(NamedTextColor.GOLD)
-                            .replaceText(Pattern.compile("<players>"), builder ->
-                                    Component.text().content(playersList)
-                                            .color(NamedTextColor.YELLOW)
-                                            .decoration(TextDecoration.ITALIC,
-                                                    TextDecoration.State.TRUE), 1);
+                            .replaceText(builder -> builder.match("<players>")
+                            .replacement(Component.text(playersList)
+                                    .color(NamedTextColor.YELLOW)
+                                    .decoration(TextDecoration.ITALIC,
+                                            TextDecoration.State.TRUE))
+                            );
                     Prism.messenger.sendMessage(call.getSender(), Prism.messenger.playerHeaderMsg(component));
                 }
                 if (!results.getActionResults().isEmpty()) {
@@ -115,9 +117,8 @@ public class LookupCommand implements SubHandler {
                         int resultCount = results.getIndexOfFirstResult();
                         for (final Handler a : paginated) {
                             final ActionMessage am = new ActionMessage(a);
-                            if (parameters.hasFlag(Flag.EXTENDED)
-                                    || plugin.getConfig()
-                                    .getBoolean("prism.messenger.always-show-extended")) {
+                            if (parameters.hasFlag(Flags.EXTENDED)
+                                    || plugin.config.parameterConfig.alwaysShowExtended) {
                                 am.showExtended();
                             }
                             am.setResultIndex(resultCount);
@@ -129,7 +130,7 @@ public class LookupCommand implements SubHandler {
                         Prism.messenger.sendMessage(player, Prism.messenger
                                 .playerError(Il8nHelper.getMessage("no-pagination-found")));
                     }
-                    if (parameters.hasFlag(Flag.PASTE)) {
+                    if (parameters.hasFlag(Flags.PASTE)) {
                         StringBuilder paste = new StringBuilder();
                         for (final Handler a : results.getActionResults()) {
                             paste.append(new ActionMessage(a).getRawMessage()).append("\r\n");

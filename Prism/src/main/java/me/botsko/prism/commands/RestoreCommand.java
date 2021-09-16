@@ -27,8 +27,8 @@ public class RestoreCommand extends AbstractCommand {
     @Override
     public void handle(final CallInfo call) {
 
-        final QueryParameters parameters = PreprocessArgs.process(plugin, call.getSender(), call.getArgs(),
-                PrismProcessType.RESTORE, 1, !plugin.getConfig().getBoolean("prism.queries.never-use-defaults"));
+        final QueryParameters parameters = PreprocessArgs.process(plugin.config, call.getSender(), call.getArgs(),
+                PrismProcessType.RESTORE, 1, !plugin.config.parameterConfig.neverUseDefaults);
         if (parameters == null) {
             return;
         }
@@ -49,8 +49,7 @@ public class RestoreCommand extends AbstractCommand {
                         Prism.messenger.playerHeaderMsg(Il8nHelper.getMessage("restore-start")));
 
                 // Inform nearby players
-                if (call.getSender() instanceof Player) {
-                    final Player player = (Player) call.getSender();
+                if (call.getSender() instanceof final Player player) {
                     plugin.notifyNearby(player, parameters.getRadius(), ReplaceableTextComponent
                             .builder("block-changes-near")
                             .replace("<player>", player.getDisplayName())

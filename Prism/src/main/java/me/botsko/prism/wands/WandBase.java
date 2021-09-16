@@ -1,5 +1,6 @@
 package me.botsko.prism.wands;
 
+import me.botsko.prism.config.PrismConfig;
 import me.botsko.prism.utils.InventoryUtils;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -10,7 +11,7 @@ public abstract class WandBase implements Wand {
 
     protected boolean itemGiven = false;
 
-    protected String wandMode;
+    protected PrismConfig.WandMode wandMode;
 
     protected Material item = Material.AIR;
 
@@ -37,7 +38,7 @@ public abstract class WandBase implements Wand {
      * Get the wand mode.
      * @return String.
      */
-    public String getWandMode() {
+    public PrismConfig.WandMode getWandMode() {
         return wandMode;
     }
 
@@ -46,7 +47,7 @@ public abstract class WandBase implements Wand {
      *
      * @param mode String
      */
-    public void setWandMode(String mode) {
+    public void setWandMode(PrismConfig.WandMode mode) {
         wandMode = mode;
     }
 

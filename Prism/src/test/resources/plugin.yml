@@ -1,0 +1,508 @@
+name: PrismTest
+main: me.botsko.prism.PrismTestPlugin
+version: 2.1.8-SNAPSHOT-TEST
+softdepend: [WorldEdit,DripReporter]
+author: AddstarMC
+authors: [add5tar, Narimm, viveleroi]
+website: https://github.com/AddstarMC/Prism-Bukkit/wiki
+api-version: 1.16
+commands:
+   prism:
+      description: Base command for everything Prism
+      usage: /prism ?
+      aliases: [pr]
+   what:
+      description: Identifies the held item according to the prism profiling system
+      usage: /what
+      aliases: [whatisthis]
+permissions:
+    prism.help:
+        default: op
+    prism.debug:
+        default: op
+    prism.wand.*:
+        default: op
+        children:
+            prism.wand.inspect: true
+            prism.wand.profile: true
+            prism.wand.rollback: true
+            prism.wand.restore: true
+    prism.setmy.wand:
+        default: op
+    prism.lookup:
+        default: op
+    prism.lookup.paginate:
+        default: true
+    prism.extinguish:
+        default: op
+    prism.drain:
+        default: op
+    prism.preview:
+        default: op
+    prism.rollback:
+        default: op
+    prism.restore:
+        default: op
+    prism.tp:
+        default: op
+    prism.report:
+        default: op
+    prism.reload:
+        default: op
+    prism.recorder:
+        default: op
+    prism.delete:
+        default: op
+    prism.alerts:
+        default: op
+    prism.bypass-use-alerts:
+        default: false
+    prism.alerts.ores.ignore:
+        default: false
+    prism.alerts.use.place.ignore:
+        default: false
+    prism.alerts.use.break.ignore:
+        default: false
+    prism.alerts.use.lighter.ignore:
+        default: false
+    prism.alerts.use.lavabucket.ignore:
+        default: false
+    prism.alerts.ignore:
+        default: false
+    prism.override-max-lookup-radius:
+        default: op
+    prism.override-max-applier-radius:
+        default: false
+    prism.ignore.tracking.block-break:
+        default: false
+    prism.ignore.tracking.block-burn:
+        default: false
+    prism.ignore.tracking.block-fade:
+        default: false
+    prism.ignore.tracking.block-fall:
+        default: false
+    prism.ignore.tracking.block-form:
+        default: false
+    prism.ignore.tracking.block-place:
+        default: false
+    prism.ignore.tracking.block-shift:
+        default: false
+    prism.ignore.tracking.block-spread:
+        default: false
+    prism.ignore.tracking.block-use:
+        default: false
+    prism.ignore.tracking.bucket-fill:
+        default: false
+    prism.ignore.tracking.bonemeal-use:
+        default: false
+    prism.ignore.tracking.container-open:
+        default: false
+    prism.ignore.tracking.container-close:
+        default: false
+    prism.ignore.tracking.cake-eat:
+        default: false
+    prism.ignore.tracking.craft-item:
+        default: false
+    prism.ignore.tracking.creeper-explode:
+        default: false
+    prism.ignore.tracking.crop-trample:
+        default: false
+    prism.ignore.tracking.dragon-eat:
+        default: false
+    prism.ignore.tracking.enchant-item:
+        default: false
+    prism.ignore.tracking.enderman-pickup:
+        default: false
+    prism.ignore.tracking.enderman-place:
+        default: false
+    prism.ignore.tracking.entity-dye:
+        default: false
+    prism.ignore.tracking.entity-explode:
+        default: false
+    prism.ignore.tracking.entity-follow:
+        default: false
+    prism.ignore.tracking.entity-form:
+        default: false
+    prism.ignore.tracking.entity-kill:
+        default: false
+    prism.ignore.tracking.entity-leash:
+        default: false
+    prism.ignore.tracking.entity-shear:
+        default: false
+    prism.ignore.tracking.entity-spawn:
+        default: false
+    prism.ignore.tracking.entity-unleash:
+        default: false
+    prism.ignore.tracking.fireball:
+        default: false
+    prism.ignore.tracking.fire-spread:
+        default: false
+    prism.ignore.tracking.firework-launch:
+        default: false
+    prism.ignore.tracking.hangingitem-break:
+        default: false
+    prism.ignore.tracking.hangingitem-place:
+        default: false
+    prism.ignore.tracking.item-drop:
+        default: false
+    prism.ignore.tracking.item-insert:
+        default: false
+    prism.ignore.tracking.item-pickup:
+        default: false
+    prism.ignore.tracking.item-remove:
+        default: false
+    prism.ignore.tracking.item-rotate:
+        default: false
+    prism.ignore.tracking.lava-break:
+        default: false
+    prism.ignore.tracking.lava-bucket:
+        default: false
+    prism.ignore.tracking.lava-flow:
+        default: false
+    prism.ignore.tracking.lava-ignite:
+        default: false
+    prism.ignore.tracking.leaf-decay:
+        default: false
+    prism.ignore.tracking.lighter:
+        default: false
+    prism.ignore.tracking.lightning:
+        default: false
+    prism.ignore.tracking.mushroom-grow:
+        default: false
+    prism.ignore.tracking.player-chat:
+        default: false
+    prism.ignore.tracking.player-command:
+        default: false
+    prism.ignore.tracking.player-death:
+        default: false
+    prism.ignore.tracking.player-join:
+        default: false
+    prism.ignore.tracking.player-kill:
+        default: false
+    prism.ignore.tracking.player-quit:
+        default: false
+    prism.ignore.tracking.player-teleport:
+        default: false
+    prism.ignore.tracking.potion-splash:
+        default: false
+    prism.ignore.tracking.sheep-eat:
+        default: false
+    prism.ignore.tracking.sign-change:
+        default: false
+    prism.ignore.tracking.spawnegg-use:
+        default: false
+    prism.ignore.tracking.tnt-explode:
+        default: false
+    prism.ignore.tracking.tnt-prime:
+        default: false
+    prism.ignore.tracking.tree-grow:
+        default: false
+    prism.ignore.tracking.vehicle-break:
+        default: false
+    prism.ignore.tracking.vehicle-enter:
+        default: false
+    prism.ignore.tracking.vehicle-exit:
+        default: false
+    prism.ignore.tracking.vehicle-place:
+        default: false
+    prism.ignore.tracking.water-break:
+        default: false
+    prism.ignore.tracking.water-bucket:
+        default: false
+    prism.ignore.tracking.water-flow:
+        default: false
+    prism.ignore.tracking.world-edit:
+        default: false
+    prism.ignore.tracking.xp-pickup:
+        default: false
+    prism.parameters.*:
+        default: op
+        children:
+            prism.parameters.action: true
+            prism.parameters.before: true
+            prism.parameters.block: true
+            prism.parameters.entity: true
+            prism.parameters.id: true
+            prism.parameters.keyword: true
+            prism.parameters.player: true
+            prism.parameters.radius: true
+            prism.parameters.since: true
+            prism.parameters.world: true
+            prism.parameters.flag.*: true
+    prism.parameters.action:
+        default: op
+    prism.parameters.action-filter-bypass:
+        default: op
+    prism.parameters.action.*:
+      default: true
+      children:
+        prism.parameters.action.block-break: true
+        prism.parameters.action.block-burn: true
+        prism.parameters.action.block-fade: true
+        prism.parameters.action.block-fall: true
+        prism.parameters.action.block-form: true
+        prism.parameters.action.block-place: true
+        prism.parameters.action.block-shift: true
+        prism.parameters.action.block-spread: true
+        prism.parameters.action.block-use: true
+        prism.parameters.action.bucket-fill: true
+        prism.parameters.action.bonemeal-use: true
+        prism.parameters.action.container-open: true
+        prism.parameters.action.container-close: true
+        prism.parameters.action.cake-eat: true
+        prism.parameters.action.craft-item: true
+        prism.parameters.action.creeper-explode: true
+        prism.parameters.action.crop-trample: true
+        prism.parameters.action.dragon-eat: true
+        prism.parameters.action.enchant-item: true
+        prism.parameters.action.enderman-pickup: true
+        prism.parameters.action.enderman-place: true
+        prism.parameters.action.entity-dye: true
+        prism.parameters.action.entity-explode: true
+        prism.parameters.action.entity-follow: true
+        prism.parameters.action.entity-form: true
+        prism.parameters.action.entity-kill: true
+        prism.parameters.action.entity-leash: true
+        prism.parameters.action.entity-shear: true
+        prism.parameters.action.entity-spawn: true
+        prism.parameters.action.entity-unleash: true
+        prism.parameters.action.fireball: true
+        prism.parameters.action.fire-spread: true
+        prism.parameters.action.firework-launch: true
+        prism.parameters.action.hangingitem-break: true
+        prism.parameters.action.hangingitem-place: true
+        prism.parameters.action.item-drop: true
+        prism.parameters.action.item-insert: true
+        prism.parameters.action.item-pickup: true
+        prism.parameters.action.item-remove: true
+        prism.parameters.action.item-rotate: true
+        prism.parameters.action.lava-break: true
+        prism.parameters.action.lava-bucket: true
+        prism.parameters.action.lava-flow: true
+        prism.parameters.action.lava-ignite: true
+        prism.parameters.action.leaf-decay: true
+        prism.parameters.action.lighter: true
+        prism.parameters.action.lightning: true
+        prism.parameters.action.mushroom-grow: true
+        prism.parameters.action.player-chat: true
+        prism.parameters.action.player-command: true
+        prism.parameters.action.player-death: true
+        prism.parameters.action.player-join: true
+        prism.parameters.action.player-kill: true
+        prism.parameters.action.player-quit: true
+        prism.parameters.action.player-teleport: true
+        prism.parameters.action.potion-splash: true
+        prism.parameters.action.sheep-eat: true
+        prism.parameters.action.sign-change: true
+        prism.parameters.action.spawnegg-use: true
+        prism.parameters.action.tnt-explode: true
+        prism.parameters.action.tnt-prime: true
+        prism.parameters.action.tree-grow: true
+        prism.parameters.action.vehicle-break: true
+        prism.parameters.action.vehicle-enter: true
+        prism.parameters.action.vehicle-exit: true
+        prism.parameters.action.vehicle-place: true
+        prism.parameters.action.water-break: true
+        prism.parameters.action.water-bucket: true
+        prism.parameters.action.water-flow: true
+        prism.parameters.action.world-edit: true
+        prism.parameters.action.xp-pickup: true
+    prism.parameters.action.block-break:
+        default: true
+    prism.parameters.action.block-burn:
+        default: true
+    prism.parameters.action.block-fade:
+        default: true
+    prism.parameters.action.block-fall:
+        default: true
+    prism.parameters.action.block-form:
+        default: true
+    prism.parameters.action.block-place:
+        default: true
+    prism.parameters.action.block-shift:
+        default: true
+    prism.parameters.action.block-spread:
+        default: true
+    prism.parameters.action.block-use:
+        default: true
+    prism.parameters.action.bucket-fill:
+        default: true
+    prism.parameters.action.bonemeal-use:
+        default: true
+    prism.parameters.action.container-open:
+        default: true
+    prism.parameters.action.container-close:
+        default: true
+    prism.parameters.action.cake-eat:
+        default: true
+    prism.parameters.action.craft-item:
+        default: true
+    prism.parameters.action.creeper-explode:
+        default: true
+    prism.parameters.action.crop-trample:
+        default: true
+    prism.parameters.action.dragon-eat:
+        default: true
+    prism.parameters.action.enchant-item:
+        default: true
+    prism.parameters.action.enderman-pickup:
+        default: true
+    prism.parameters.action.enderman-place:
+        default: true
+    prism.parameters.action.entity-dye:
+        default: true
+    prism.parameters.action.entity-explode:
+        default: true
+    prism.parameters.action.entity-follow:
+        default: true
+    prism.parameters.action.entity-form:
+        default: true
+    prism.parameters.action.entity-kill:
+        default: true
+    prism.parameters.action.entity-leash:
+        default: true
+    prism.parameters.action.entity-shear:
+        default: true
+    prism.parameters.action.entity-spawn:
+        default: true
+    prism.parameters.action.entity-unleash:
+        default: true
+    prism.parameters.action.fireball:
+        default: true
+    prism.parameters.action.fire-spread:
+        default: true
+    prism.parameters.action.firework-launch:
+        default: true
+    prism.parameters.action.hangingitem-break:
+        default: true
+    prism.parameters.action.hangingitem-place:
+        default: true
+    prism.parameters.action.item-drop:
+        default: true
+    prism.parameters.action.item-insert:
+        default: true
+    prism.parameters.action.item-pickup:
+        default: true
+    prism.parameters.action.item-remove:
+        default: true
+    prism.parameters.action.item-rotate:
+        default: true
+    prism.parameters.action.lava-break:
+        default: true
+    prism.parameters.action.lava-bucket:
+        default: true
+    prism.parameters.action.lava-flow:
+        default: true
+    prism.parameters.action.lava-ignite:
+        default: true
+    prism.parameters.action.leaf-decay:
+        default: true
+    prism.parameters.action.lighter:
+        default: true
+    prism.parameters.action.lightning:
+        default: true
+    prism.parameters.action.mushroom-grow:
+        default: true
+    prism.parameters.action.player-chat:
+        default: true
+    prism.parameters.action.player-command:
+        default: true
+    prism.parameters.action.player-death:
+        default: true
+    prism.parameters.action.player-join:
+        default: true
+    prism.parameters.action.player-kill:
+        default: true
+    prism.parameters.action.player-quit:
+        default: true
+    prism.parameters.action.player-teleport:
+        default: true
+    prism.parameters.action.potion-splash:
+        default: true
+    prism.parameters.action.sheep-eat:
+        default: true
+    prism.parameters.action.sign-change:
+        default: true
+    prism.parameters.action.spawnegg-use:
+        default: true
+    prism.parameters.action.tnt-explode:
+        default: true
+    prism.parameters.action.tnt-prime:
+        default: true
+    prism.parameters.action.tree-grow:
+        default: true
+    prism.parameters.action.vehicle-break:
+        default: true
+    prism.parameters.action.vehicle-enter:
+        default: true
+    prism.parameters.action.vehicle-exit:
+        default: true
+    prism.parameters.action.vehicle-place:
+        default: true
+    prism.parameters.action.water-break:
+        default: true
+    prism.parameters.action.water-bucket:
+        default: true
+    prism.parameters.action.water-flow:
+        default: true
+    prism.parameters.action.world-edit:
+        default: true
+    prism.parameters.action.xp-pickup:
+        default: true
+    prism.parameters.before:
+        default: op
+    prism.parameters.block:
+        default: op
+    prism.parameters.entity:
+        default: op
+    prism.parameters.id:
+        default: op
+    prism.parameters.keyword:
+        default: op
+    prism.parameters.player:
+        default: op
+    prism.parameters.radius:
+        default: op
+    prism.parameters.since:
+        default: op
+    prism.parameters.world:
+        default: op
+    prism.parameters.flag.*:
+        default: op
+        children:
+            prism.parameters.flag.drain: true
+            prism.parameters.flag.drain-lava: true
+            prism.parameters.flag.drain-water: true
+            prism.parameters.flag.extended: true
+            prism.parameters.flag.no-ext: true
+            prism.parameters.flag.no-itemclear: true
+            prism.parameters.flag.per-page: true
+            prism.parameters.flag.no-group: true
+            prism.parameters.flag.overwrite: true
+            prism.parameters.flag.share: true
+            prism.parameters.flag.paste: true
+            prism.parameters.flag.no-phys: true
+    prism.parameters.flag.drain:
+        default: op
+    prism.parameters.flag.drain-lava:
+        default: op
+    prism.parameters.flag.drain-water:
+        default: op
+    prism.parameters.flag.extended:
+        default: op
+    prism.parameters.flag.no-ext:
+        default: op
+    prism.parameters.flag.no-itemclear:
+        default: op
+    prism.parameters.flag.per-page:
+        default: op
+    prism.parameters.flag.no-group:
+        default: op
+    prism.parameters.flag.overwrite:
+        default: op
+    prism.parameters.flag.share:
+        default: op
+    prism.parameters.flag.paste:
+        default: op
+    prism.parameters.flag.no-phys:
+        default: op

@@ -1,8 +1,10 @@
 package me.botsko.prism.listeners;
 
 import me.botsko.prism.Prism;
+import me.botsko.prism.PrismLogHandler;
 import me.botsko.prism.actionlibs.ActionFactory;
 import me.botsko.prism.actionlibs.RecordingQueue;
+import me.botsko.prism.api.actions.ActionType;
 import me.botsko.prism.api.actions.Handler;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -32,9 +34,9 @@ public class PrismInventoryEvents implements Listener {
     private boolean trackingInsert;
     private boolean trackingRemove;
     private boolean trackingBreaks;
-    private static final String INSERT = "item-insert";
-    private static final String REMOVE = "item-remove";
-    private static final String BREAK = "item-break";
+    private static final ActionType INSERT = ActionType.ITEM_INSERT;
+    private static final ActionType REMOVE = ActionType.ITEM_REMOVE;
+    private static final ActionType BREAK = ActionType.ITEM_BREAK;
     private final Prism plugin;
 
     /**
@@ -43,9 +45,9 @@ public class PrismInventoryEvents implements Listener {
      */
     public PrismInventoryEvents(Prism plugin) {
         this.plugin = plugin;
-        this.trackingInsert = !Prism.getIgnore().event(INSERT);
-        this.trackingRemove = !Prism.getIgnore().event(REMOVE);
-        this.trackingBreaks = Prism.getIgnore().event(BREAK);
+        this.trackingInsert = !Prism.getIgnore().event(ActionType.ITEM_INSERT);
+        this.trackingRemove = !Prism.getIgnore().event(ActionType.ITEM_REMOVE);
+        this.trackingBreaks = Prism.getIgnore().event(ActionType.ITEM_BREAK);
 
     }
 
@@ -56,18 +58,19 @@ public class PrismInventoryEvents implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onInventoryPickupItem(final InventoryPickupItemEvent event) {
 
-        if (!plugin.getConfig().getBoolean("prism.track-hopper-item-events")) {
+        if (!plugin.config.trackingConfig.hopperItemEvents) {
             return;
         }
 
-        if (!Prism.getIgnore().event("item-pickup")) {
+        if (!Prism.getIgnore().event(ActionType.ITEM_PICKUP)) {
             return;
         }
 
         // If hopper
         if (event.getInventory().getType().equals(InventoryType.HOPPER)) {
-            RecordingQueue.addToQueue(ActionFactory.createItemStack("item-pickup", event.getItem().getItemStack(),
-                    event.getItem().getItemStack().getAmount(), -1, null, event.getItem().getLocation(), "hopper"));
+            RecordingQueue.addToQueue(ActionFactory.createItemStack(ActionType.ITEM_PICKUP,
+                    event.getItem().getItemStack(),event.getItem().getItemStack().getAmount(),
+                    -1, null, event.getItem().getLocation(), "hopper"));
         }
     }
 
@@ -114,8 +117,8 @@ public class PrismInventoryEvents implements Listener {
                         ? 0 : stack.getAmount();
                 int amount = entry.getValue().getAmount() - slotViewAmount;
 
-                RecordingQueue.addToQueue(ActionFactory.createItemStack(INSERT, entry.getValue(), amount,
-                        rawSlot, null, containerLoc, player));
+                RecordingQueue.addToQueue(ActionFactory.createItemStack(ActionType.ITEM_INSERT, entry.getValue(),
+                        amount,rawSlot, null, containerLoc, player));
             }
         }
     }
@@ -127,11 +130,11 @@ public class PrismInventoryEvents implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEnchantItem(final EnchantItemEvent event) {
-        if (!Prism.getIgnore().event("enchant-item", event.getEnchanter())) {
+        if (!Prism.getIgnore().event(ActionType.ENCHANT_ITEM, event.getEnchanter())) {
             return;
         }
         final Player player = event.getEnchanter();
-        RecordingQueue.addToQueue(ActionFactory.createItemStack("enchant-item", event.getItem(),
+        RecordingQueue.addToQueue(ActionFactory.createItemStack(ActionType.ENCHANT_ITEM, event.getItem(),
                 event.getEnchantsToAdd(), event.getEnchantBlock().getLocation(), player));
     }
 
@@ -141,18 +144,18 @@ public class PrismInventoryEvents implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR,ignoreCancelled = true)
     public void onPrepareCraftItem(PrepareItemCraftEvent prepareItemCraftEvent) {
-        if (Prism.getIgnore().event("craft-item")) {
+        if (Prism.getIgnore().event(ActionType.CRAFT_ITEM)) {
             return;
         }
         List<HumanEntity> recordable = prepareItemCraftEvent.getViewers().stream().filter(humanEntity -> {
             if (humanEntity instanceof Player) {
-                return Prism.getIgnore().event("craft-item", (Player) humanEntity);
+                return Prism.getIgnore().event(ActionType.CRAFT_ITEM, (Player) humanEntity);
             }
             return false;
         }).collect(Collectors.toList());
         if (recordable.size() > 0) {
             //todo
-            Prism.debug("PrepareCraftEvent: " + prepareItemCraftEvent.toString());
+            PrismLogHandler.debug("PrepareCraftEvent: " + prepareItemCraftEvent);
         }
 
     }
@@ -165,12 +168,12 @@ public class PrismInventoryEvents implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onCraftItem(final CraftItemEvent event) {
         final Player player = (Player) event.getWhoClicked();
-        if (!Prism.getIgnore().event("craft-item", player)) {
+        if (!Prism.getIgnore().event(ActionType.CRAFT_ITEM, player)) {
             return;
         }
         final ItemStack item = event.getRecipe().getResult();
         RecordingQueue.addToQueue(
-                ActionFactory.createItemStack("craft-item", item, 1, -1, null, player.getLocation(), player));
+                ActionFactory.createItemStack(ActionType.CRAFT_ITEM, item, 1, -1, null, player.getLocation(), player));
     }
 
     /**
@@ -198,8 +201,7 @@ public class PrismInventoryEvents implements Listener {
         final Player player = (Player) event.getWhoClicked();
 
         // Ignore all item move events where players modify their own inventory
-        if (event.getInventory().getHolder() instanceof Player) {
-            Player other = (Player) event.getInventory().getHolder();
+        if (event.getInventory().getHolder() instanceof Player other) {
 
             if (other.equals(player)) {
                 return;
@@ -214,8 +216,8 @@ public class PrismInventoryEvents implements Listener {
         if (slotItem == null) {
             return;
         }
-        Prism.debug("HELD:" + ((heldItem != null) ? heldItem.toString() : "NULL"));
-        Prism.debug("SLOT:" +  slotItem.toString());
+        PrismLogHandler.debug("HELD:" + ((heldItem != null) ? heldItem.toString() : "NULL"));
+        PrismLogHandler.debug("SLOT:" + slotItem);
 
         switch (event.getClick()) {
             // IGNORE BOTTOM
@@ -225,7 +227,7 @@ public class PrismInventoryEvents implements Listener {
                         if (slotItem.getType() != Material.AIR) {
                             RecordingQueue.addToQueue(ActionFactory.createItemStack(REMOVE, slotItem,
                                     slotItem.getAmount(), slot, null, containerLoc, player));
-                            Prism.debug("ACTION: " + event.getAction().name());
+                            PrismLogHandler.debug("ACTION: " + event.getAction().name());
                         }
                     } else {
                         int amount = 0;
@@ -240,14 +242,14 @@ public class PrismInventoryEvents implements Listener {
                         if (amount > 0) {
                             RecordingQueue.addToQueue(ActionFactory.createItemStack(INSERT, heldItem, amount, slot,
                                     null, containerLoc, player));
-                            Prism.debug("ACTION: " + event.getAction().name());
+                            PrismLogHandler.debug("ACTION: " + event.getAction().name());
 
                         }
                         if (slotItem.getType() != Material.AIR && !slotItem.getType().equals(heldItem.getType())) {
                             // its a switch.
                             RecordingQueue.addToQueue(ActionFactory.createItemStack(INSERT,heldItem,
                                     heldItem.getAmount(),slot,null,containerLoc,player));
-                            Prism.debug("ACTION: " + event.getAction().name());
+                            PrismLogHandler.debug("ACTION: " + event.getAction().name());
                             RecordingQueue.addToQueue(ActionFactory.createItemStack(REMOVE,slotItem,
                                     slotItem.getAmount(),slot,null,containerLoc,player));
                         }
@@ -261,7 +263,7 @@ public class PrismInventoryEvents implements Listener {
                         if (slotItem.getType() != Material.AIR) {
                             RecordingQueue.addToQueue(ActionFactory.createItemStack(REMOVE, slotItem,
                                     (slotItem.getAmount() + 1) / 2, slot, null, containerLoc, player));
-                            Prism.debug("ACTION: " + event.getAction().name());
+                            PrismLogHandler.debug("ACTION: " + event.getAction().name());
 
                         }
                     } else {
@@ -269,7 +271,7 @@ public class PrismInventoryEvents implements Listener {
                                 && slotItem.getAmount() < slotItem.getType().getMaxStackSize()) {
                             RecordingQueue.addToQueue(ActionFactory.createItemStack(INSERT, slotItem, 1, slot, null,
                                     containerLoc, player));
-                            Prism.debug("ACTION: " + event.getAction().name());
+                            PrismLogHandler.debug("ACTION: " + event.getAction().name());
 
                         }
                     }
@@ -283,14 +285,14 @@ public class PrismInventoryEvents implements Listener {
                     if (slotItem.getType() != Material.AIR) {
                         RecordingQueue.addToQueue(ActionFactory.createItemStack(REMOVE, slotItem, slotItem.getAmount(),
                                 slot, null, containerLoc, player));
-                        Prism.debug("ACTION: " + event.getAction().name());
+                        PrismLogHandler.debug("ACTION: " + event.getAction().name());
 
                     }
 
                     if (swapItem != null && swapItem.getType() != Material.AIR) {
                         RecordingQueue.addToQueue(ActionFactory.createItemStack(INSERT, swapItem, swapItem.getAmount(),
                                 slot, null, containerLoc, player));
-                        Prism.debug("ACTION: " + event.getAction().name());
+                        PrismLogHandler.debug("ACTION: " + event.getAction().name());
 
                     }
                 }
@@ -328,7 +330,6 @@ public class PrismInventoryEvents implements Listener {
                         int remaining = slotItem.getAmount();
 
                         for (ItemStack is : event.getView().getBottomInventory().getStorageContents()) {
-                            //noinspection ConstantConditions  Until intellij sorts it checks
                             if (is == null || is.getType() == Material.AIR) {
                                 remaining -= stackSize;
                             } else if (is.isSimilar(slotItem)) {
@@ -343,7 +344,7 @@ public class PrismInventoryEvents implements Listener {
 
                         RecordingQueue.addToQueue(ActionFactory.createItemStack(REMOVE, slotItem,
                                 slotItem.getAmount() - remaining, slot, null, containerLoc, player));
-                        Prism.debug("ACTION: " + event.getAction().name());
+                        PrismLogHandler.debug("ACTION: " + event.getAction().name());
 
                     }
                 } else {
@@ -388,7 +389,7 @@ public class PrismInventoryEvents implements Listener {
                 if (slotItem.getType() != Material.AIR && slotItem.getAmount() > 0) {
                     RecordingQueue.addToQueue(
                             ActionFactory.createItemStack(REMOVE, slotItem, 1, slot, null, containerLoc, player));
-                    Prism.debug("ACTION: " + event.getAction().name());
+                    PrismLogHandler.debug("ACTION: " + event.getAction().name());
 
                 }
                 break;
@@ -397,7 +398,7 @@ public class PrismInventoryEvents implements Listener {
                 if (slotItem.getType() != Material.AIR && slotItem.getAmount() > 0) {
                     RecordingQueue.addToQueue(ActionFactory.createItemStack(REMOVE, slotItem, slotItem.getAmount(),
                             slot, null, containerLoc, player));
-                    Prism.debug("ACTION: " + event.getAction().name());
+                    PrismLogHandler.debug("ACTION: " + event.getAction().name());
 
                 }
                 break;
@@ -412,14 +413,14 @@ public class PrismInventoryEvents implements Listener {
         }
     }
 
-    private int recordDeductTransfer(String act, int size, int amount, ItemStack heldItem, Location containerLoc,
+    private int recordDeductTransfer(ActionType act, int size, int amount, ItemStack heldItem, Location containerLoc,
                                      int slotLocation, Player player, InventoryClickEvent event) {
         int transferred = Math.min(size, amount);
         int newAmount = amount - transferred;
         if (transferred > 0) {
             RecordingQueue.addToQueue(ActionFactory.createItemStack(act, heldItem, transferred, slotLocation, null,
                     containerLoc, player));
-            Prism.debug("ACTION: " + event.getAction().name());
+            PrismLogHandler.debug("ACTION: " + event.getAction().name());
 
         }
         return newAmount;
@@ -441,9 +442,9 @@ public class PrismInventoryEvents implements Listener {
     }
 
     private boolean notTrackingInsertAndRemove() {
-        this.trackingInsert = Prism.getIgnore().event(INSERT);
-        this.trackingRemove = Prism.getIgnore().event(REMOVE);
-        this.trackingBreaks = Prism.getIgnore().event(BREAK);
+        this.trackingInsert = Prism.getIgnore().event(ActionType.ITEM_INSERT);
+        this.trackingRemove = Prism.getIgnore().event(ActionType.ITEM_REMOVE);
+        this.trackingBreaks = Prism.getIgnore().event(ActionType.ITEM_BREAK);
 
         return !trackingInsert && !trackingRemove;
     }

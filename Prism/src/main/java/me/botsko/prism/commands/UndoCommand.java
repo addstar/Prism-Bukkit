@@ -7,16 +7,16 @@ import me.botsko.prism.actionlibs.ActionsQuery;
 import me.botsko.prism.actionlibs.QueryParameters;
 import me.botsko.prism.actionlibs.QueryResult;
 import me.botsko.prism.actions.PrismProcessAction;
+import me.botsko.prism.api.PrismParameters;
+import me.botsko.prism.api.actions.ActionType;
 import me.botsko.prism.api.actions.Handler;
 import me.botsko.prism.api.actions.PrismProcessType;
-import me.botsko.prism.api.commands.Flag;
 import me.botsko.prism.appliers.Previewable;
 import me.botsko.prism.appliers.PrismApplierCallback;
 import me.botsko.prism.appliers.Undo;
 import me.botsko.prism.commandlibs.CallInfo;
 import me.botsko.prism.commandlibs.SubHandler;
 import me.botsko.prism.utils.TypeUtils;
-import net.kyori.adventure.audience.Audience;
 import org.bukkit.ChatColor;
 
 import java.util.List;
@@ -36,7 +36,6 @@ public class UndoCommand implements SubHandler {
 
     @Override
     public void handle(CallInfo call) {
-        final Audience audience = Prism.getAudiences().player(call.getPlayer());
         if (call.getArgs().length > 1) {
 
             final ActionsQuery aq = new ActionsQuery(plugin);
@@ -70,7 +69,7 @@ public class UndoCommand implements SubHandler {
             }
 
             // We only support this for drains
-            if (!process.getProcessChildActionType().equals("prism-drain")) {
+            if (!process.getProcessChildActionType().equals(ActionType.PRISM_DRAIN)) {
                 Prism.messenger.sendMessage(call.getPlayer(),
                         Prism.messenger.playerError("You can't currently undo anything other than a drain process."));
                 return;
@@ -105,13 +104,11 @@ public class UndoCommand implements SubHandler {
 
             // Show the list
             // Process and validate all of the arguments
-            final QueryParameters parameters = new QueryParameters();
+            final PrismParameters parameters = new QueryParameters();
             parameters.setAllowNoRadius(true);
-            parameters.addActionType("prism-process");
+            parameters.addActionType(ActionType.PRISM_PROCESS);
             parameters.addPlayerName(call.getPlayer().getName());
             parameters.setLimit(5); // @todo config this, and move the logic
-            // to queryparams
-
             final ActionsQuery aq = new ActionsQuery(plugin);
             final QueryResult results = aq.lookup(parameters, call.getPlayer());
             if (!results.getActionResults().isEmpty()) {
@@ -125,8 +122,8 @@ public class UndoCommand implements SubHandler {
                 if (paginated != null) {
                     for (final Handler a : paginated) {
                         final ActionMessage am = new ActionMessage(a);
-                        if (parameters.hasFlag(Flag.EXTENDED)
-                                || plugin.getConfig().getBoolean("prism.messenger.always-show-extended")) {
+                        if (parameters.hasFlag(Flags.EXTENDED)
+                                || plugin.config.parameterConfig.alwaysShowExtended) {
                             am.showExtended();
                         }
                         Prism.messenger.sendMessage(call.getPlayer(),Prism.messenger.playerMsg(am.getMessage()));

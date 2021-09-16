@@ -19,7 +19,7 @@ Welcome to Prism for Bukkit's documentation!
    Commands <commands>
    Purging Excess Data <purging>
    API Documentation <api/index>
-
+   Change Log <changelog>
 
 Indices and tables
 ==================

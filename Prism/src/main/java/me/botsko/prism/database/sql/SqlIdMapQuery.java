@@ -1,6 +1,6 @@
 package me.botsko.prism.database.sql;
 
-import me.botsko.prism.Prism;
+import me.botsko.prism.PrismLogHandler;
 import me.botsko.prism.database.IdMapQuery;
 import me.botsko.prism.database.PrismDataSource;
 import me.botsko.prism.utils.IntPair;
@@ -10,6 +10,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLSyntaxErrorException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -17,28 +18,33 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-public class SqlIdMapQuery implements IdMapQuery {
-    private static final String toIds =
-            "SELECT block_id, block_subid FROM <prefix>id_map WHERE material=? AND state=? LIMIT 1;";
-    private static final String toAllIds = "SELECT block_id, block_subid FROM <prefix>id_map WHERE material=?;";
-    private static final String partialToAllIds = "SELECT block_id, block_subid FROM <prefix>id_map "
-            + "WHERE material=? AND state LIKE ?";
-    private static final String toMat = "SELECT material, state FROM <prefix>id_map "
-            + "WHERE block_id=? AND block_subid=? LIMIT 1;";
-    private static final String map = "INSERT INTO <prefix>id_map(material, state, block_id, block_subid) "
-            + "VALUES (?, ?, ?, ?);";
-    private static final String automap = "INSERT INTO <prefix>id_map(material, state) VALUES (?, ?);";
-    private static final String repair = "UPDATE <prefix>id_map SET block_id=?, block_subid=? WHERE block_id=?;";
-    private static final String unauto = "ALTER TABLE <prefix>id_map AUTO_INCREMENT=?;";
-    private final String prefix;
-    private final PrismDataSource dataSource;
+public abstract class SqlIdMapQuery implements IdMapQuery {
+
+    protected abstract String getToIds();
+
+    protected abstract String getToAllIds();
+
+    protected abstract String getPartialToAllIds();
+
+    protected abstract String getToMat();
+
+    protected abstract String getMap();
+
+    protected abstract String getAutomap();
+
+    protected abstract String getRepair();
+
+    protected abstract String getUnauto();
+
+    protected final String prefix;
+    private final PrismDataSource<?> dataSource;
 
     /**
      * Constructor.
      *
      * @param dataSource PrismDataSource
      */
-    public SqlIdMapQuery(PrismDataSource dataSource) {
+    public SqlIdMapQuery(PrismDataSource<?> dataSource) {
         this.dataSource = dataSource;
         prefix = dataSource.getPrefix();
 
@@ -53,19 +59,18 @@ public class SqlIdMapQuery implements IdMapQuery {
 
     /**
      * Find material and consume it.
-     * @param blockId int
+     *
+     * @param blockId    int
      * @param blockSubid int
-     * @param success BiConsumer
-     * @param failure Runnable.
+     * @param success    BiConsumer
+     * @param failure    Runnable.
      */
     public void findMaterial(int blockId, int blockSubid, BiConsumer<String, String> success, Runnable failure) {
         Validate.notNull(success, "Success callback cannot be null");
         Validate.notNull(failure, "Failure callback cannot be null (use findMaterial(int, int, BiConsumer)");
 
-        String query = toMat.replace("<prefix>", prefix);
-
         try (Connection conn = dataSource.getConnection()) {
-            try (PreparedStatement st = conn.prepareStatement(query)) {
+            try (PreparedStatement st = conn.prepareStatement(getToMat())) {
                 st.setInt(1, blockId);
                 st.setInt(2, blockSubid);
                 try (ResultSet rs = st.executeQuery()) {
@@ -75,9 +80,11 @@ public class SqlIdMapQuery implements IdMapQuery {
                         failure.run();
                     }
                 }
+            } catch (final SQLException e) {
+                handleSqlException(Integer.toString(blockId), e, failure);
             }
-        } catch (final SQLException e) {
-            Prism.warn("Database connection error: ", e);
+        } catch (SQLException e) {
+            dataSource.handleDataSourceException(e);
         }
     }
 
@@ -87,10 +94,11 @@ public class SqlIdMapQuery implements IdMapQuery {
 
     /**
      * Find ids and consume.
+     *
      * @param material String
-     * @param state state
-     * @param success Consumer
-     * @param failure Runnable
+     * @param state    state
+     * @param success  Consumer
+     * @param failure  Runnable
      */
     public void findIds(String material, String state, BiConsumer<Integer, Integer> success, Runnable failure) {
         Validate.notNull(material, "Material cannot be null");
@@ -98,14 +106,12 @@ public class SqlIdMapQuery implements IdMapQuery {
         Validate.notNull(success, "Success callback cannot be null");
         Validate.notNull(failure, "Failure callback cannot be null (use findIds(String, String, BiConsumer)");
 
-        String query = toIds.replace("<prefix>", prefix);
-
         if (state.equals("0")) {
             state = "";
         }
 
         try (Connection conn = dataSource.getConnection()) {
-            try (PreparedStatement st = conn.prepareStatement(query)) {
+            try (PreparedStatement st = conn.prepareStatement(getToIds())) {
                 st.setString(1, material);
                 st.setString(2, state);
                 try (ResultSet rs = st.executeQuery()) {
@@ -115,9 +121,25 @@ public class SqlIdMapQuery implements IdMapQuery {
                         failure.run();
                     }
                 }
+            } catch (final SQLException e) {
+                handleSqlException(material, e, failure);
             }
-        } catch (final SQLException e) {
-            Prism.warn("Database connection error: ", e);
+        } catch (SQLException e) {
+            dataSource.handleDataSourceException(e);
+        }
+    }
+
+    /**
+     * Handles a special case where a DERBY QUERY Fails.
+     * @param e Exception
+     * @param runnable Runnable
+     */
+    private void handleSqlException(String material, SQLException e,Runnable runnable) {
+        if (e instanceof SQLSyntaxErrorException && e.getMessage().contains("EOF")) {
+            PrismLogHandler.log("Error thrown by ID:" + material + " Error:  " + e.getMessage());
+            runnable.run();
+        } else {
+            PrismLogHandler.warn("Database connection error: ", e);
         }
     }
 
@@ -127,24 +149,23 @@ public class SqlIdMapQuery implements IdMapQuery {
 
     /**
      * Find and consume.
+     *
      * @param material String
-     * @param success Consumer
-     * @param failure Runnable
+     * @param success  Consumer
+     * @param failure  Runnable
      */
     public void findAllIds(String material, Consumer<List<IntPair>> success, Runnable failure) {
         Validate.notNull(material, "Material cannot be null");
         Validate.notNull(success, "Success callback cannot be null");
         Validate.notNull(failure, "Failure callback cannot be null (use findAllIds(String, BiConsumer)");
 
-        String query = toAllIds.replace("<prefix>", prefix);
-
         try (Connection conn = dataSource.getConnection()) {
-            try (PreparedStatement st = conn.prepareStatement(query)) {
+            try (PreparedStatement st = conn.prepareStatement(getToAllIds())) {
                 st.setString(1, material);
-                handleIdResult(st,success,failure);
+                handleIdResult(st, success, failure);
             }
         } catch (final SQLException e) {
-            Prism.warn("Database connection error: ", e);
+            PrismLogHandler.warn("Database connection error: ", e);
             e.printStackTrace();
         }
     }
@@ -155,28 +176,29 @@ public class SqlIdMapQuery implements IdMapQuery {
 
     /**
      * Find partials.
-     * @param material String
+     *
+     * @param material  String
      * @param stateLike String
-     * @param success Consume
-     * @param failure Runnable
+     * @param success   Consume
+     * @param failure   Runnable
      */
     private void findAllIdsPartial(String material, String stateLike, Consumer<List<IntPair>> success,
-                                  Runnable failure) {
+                                   Runnable failure) {
         Validate.notNull(material, "Material cannot be null");
         Validate.notNull(success, "Success callback cannot be null");
         Validate.notNull(failure, "Failure callback cannot be null (use findAllIds(String, BiConsumer)");
 
-        String query = partialToAllIds.replace("<prefix>", prefix);
-
         try (Connection conn = dataSource.getConnection()) {
-            try (PreparedStatement st = conn.prepareStatement(query)) {
+            try (PreparedStatement st = conn.prepareStatement(getPartialToAllIds())) {
                 st.setString(1, material);
                 st.setString(2, stateLike);
                 handleIdResult(st, success, failure);
+            } catch (final SQLException e) {
+                PrismLogHandler.warn("Database connection error: ", e);
+                e.printStackTrace();
             }
-        } catch (final SQLException e) {
-            Prism.warn("Database connection error: ", e);
-            e.printStackTrace();
+        } catch (SQLException e) {
+            dataSource.handleDataSourceException(e);
         }
     }
 
@@ -199,17 +221,15 @@ public class SqlIdMapQuery implements IdMapQuery {
 
     /**
      * Build map.
-     * @param material String
-     * @param state state
-     * @param blockId id
-     * @param blockSubid  subid
+     *
+     * @param material   String
+     * @param state      state
+     * @param blockId    id
+     * @param blockSubid subid
      */
     public void map(String material, String state, int blockId, int blockSubid) {
         Validate.notNull(material, "Material cannot be null");
         Validate.notNull(state, "State cannot be null");
-
-        String query = map.replace("<prefix>", prefix);
-
         if (state.equals("0")) {
             state = "";
         }
@@ -217,33 +237,29 @@ public class SqlIdMapQuery implements IdMapQuery {
         // Auto increment trouble. "0" in MYSQL can also mean "I am a placeholder and
         // fill me in please", which is annoying here.
         if (blockId == 0) {
-            query = repair.replace("<prefix>", prefix);
             int autoId = mapAutoId(material, state);
-
             try (Connection conn = dataSource.getConnection()) {
-                try (PreparedStatement st = conn.prepareStatement(query)) {
+                try (PreparedStatement st = conn.prepareStatement(getRepair())) {
                     st.setInt(1, blockId);
                     st.setInt(2, blockSubid);
                     st.setInt(3, autoId);
-
                     st.executeUpdate();
                 }
 
                 // If the statement above fails, we can't roll back the auto increment without
                 // risk of collision (and making things worse)
                 // Don't attempt to run in that case
-                try (PreparedStatement st = conn.prepareStatement(unauto.replace("<prefix>", prefix))) {
+                try (PreparedStatement st = conn.prepareStatement(getUnauto())) {
                     st.setInt(1, autoId);
-
                     st.executeUpdate();
                 }
             } catch (final SQLException e) {
-                Prism.warn("Database connection error: ", e);
+                PrismLogHandler.warn("Database connection error: ", e);
                 e.printStackTrace();
             }
         } else {
             try (Connection conn = dataSource.getConnection()) {
-                try (PreparedStatement st = conn.prepareStatement(query)) {
+                try (PreparedStatement st = conn.prepareStatement(getMap())) {
                     st.setString(1, material);
                     st.setString(2, state);
                     st.setInt(3, blockId);
@@ -252,7 +268,7 @@ public class SqlIdMapQuery implements IdMapQuery {
                     st.executeUpdate();
                 }
             } catch (final SQLException e) {
-                Prism.warn("Database connection error: ", e);
+                PrismLogHandler.warn("Database connection error: ", e);
                 e.printStackTrace();
             }
         }
@@ -260,22 +276,21 @@ public class SqlIdMapQuery implements IdMapQuery {
 
     /**
      * map material to id.
+     *
      * @param material Material
-     * @param state State
+     * @param state    State
      * @return int.
      */
     public int mapAutoId(String material, String state) {
         Validate.notNull(material, "Material cannot be null");
         Validate.notNull(state, "State cannot be null");
 
-        String query = automap.replace("<prefix>", prefix);
-
         if (state.equals("0") || state.equals("[]")) {
             state = "";
         }
 
         try (Connection conn = dataSource.getConnection()) {
-            try (PreparedStatement st = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
+            try (PreparedStatement st = conn.prepareStatement(getAutomap(), Statement.RETURN_GENERATED_KEYS)) {
                 st.setString(1, material);
                 st.setString(2, state);
 
@@ -284,7 +299,7 @@ public class SqlIdMapQuery implements IdMapQuery {
                 SQLWarning warning = st.getWarnings();
 
                 while (warning != null) {
-                    Prism.warn("sql Warning: " + warning.getMessage());
+                    PrismLogHandler.warn("sql Warning: " + warning.getMessage());
                     warning = warning.getNextWarning();
                 }
 
@@ -293,15 +308,17 @@ public class SqlIdMapQuery implements IdMapQuery {
                     int autoInc = rs.getInt(1);
 
                     if (!success) {
-                        Prism.log("Failed id map: material=" + material + ", " + "state=" + state);
+                        PrismLogHandler.log("Failed id map: material=" + material + ", " + "state=" + state);
                     }
 
                     return autoInc;
                 }
+            } catch (final SQLException e) {
+                PrismLogHandler.log("Failed id map: material=" + material + ", " + "state=" + state);
+                PrismLogHandler.warn("Database Statement error: " + e.getMessage());
             }
         } catch (final SQLException e) {
-            Prism.warn("Database connection error: ", e);
-            e.printStackTrace();
+            dataSource.handleDataSourceException(e);
         }
 
         return 0;

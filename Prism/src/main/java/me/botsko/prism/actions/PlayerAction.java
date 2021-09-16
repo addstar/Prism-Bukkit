@@ -10,19 +10,12 @@ public class PlayerAction extends GenericAction {
     @Override
     public String getNiceName() {
         if (extraInfo != null && !extraInfo.isEmpty()) {
-            switch (getActionType().getName()) {
-                case "player-join":
-                    return "from " + extraInfo;
-
-                case "xp-pickup":
-                    return extraInfo + " xp";
-
-                case "bucket-fill":
-                    return "a " + extraInfo + " bucket";
-
-                default:
-                    return extraInfo;
-            }
+            return switch (getAction().getName()) {
+                case "player-join" -> "from " + extraInfo;
+                case "xp-pickup" -> extraInfo + " xp";
+                case "bucket-fill" -> "a " + extraInfo + " bucket";
+                default -> extraInfo;
+            };
         }
 
         return "";

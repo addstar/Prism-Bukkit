@@ -33,7 +33,7 @@ public class QueryParameters implements PrismParameters, Cloneable {
     private final Set<MaterialState> materialStateFilters = new HashSet<>();
     private final Map<String, MatchRule> entityFilters = new HashMap<>();
     private final Map<String, MatchRule> playerNames = new HashMap<>();
-    private final EnumSet<Flag> flags = EnumSet.noneOf(Flag.class);
+    private final Set<Flag> flags = new HashSet<>();
     private final List<CommandSender> sharedPlayers = new ArrayList<>();
 
     private Set<String> foundArgs = new HashSet<>();
@@ -54,7 +54,7 @@ public class QueryParameters implements PrismParameters, Cloneable {
     private String keyword;
     private boolean ignoreTime;
 
-    private HashMap<String, MatchRule> actionTypeRules = new HashMap<>();
+    private HashMap<ActionType, MatchRule> actionTypeRules = new HashMap<>();
 
     private int perPage = 5;
     private int limit = 1000000;
@@ -342,7 +342,7 @@ public class QueryParameters implements PrismParameters, Cloneable {
      * Get a set of actions to match with a match rules.
      * @return the Action Type
      */
-    public HashMap<String, MatchRule> getActionTypes() {
+    public HashMap<ActionType, MatchRule> getActionTypes() {
         return actionTypeRules;
     }
 
@@ -352,7 +352,7 @@ public class QueryParameters implements PrismParameters, Cloneable {
      * @deprecated use getActionTypes()
      */
     @Deprecated
-    public HashMap<String, MatchRule> getActionTypeNames() {
+    public HashMap<ActionType, MatchRule> getActionTypeNames() {
         return getActionTypes();
     }
 
@@ -360,7 +360,7 @@ public class QueryParameters implements PrismParameters, Cloneable {
      * Add action type to the filter with include rule.
      * @param actionType the action_type to set
      */
-    public void addActionType(String actionType) {
+    public void addActionType(ActionType actionType) {
         addActionType(actionType, MatchRule.INCLUDE);
     }
 
@@ -369,7 +369,7 @@ public class QueryParameters implements PrismParameters, Cloneable {
      * @param actionType the action_type to set
      * @param match the rule
      */
-    public void addActionType(String actionType, MatchRule match) {
+    public void addActionType(ActionType actionType, MatchRule match) {
         this.actionTypeRules.put(actionType, match);
     }
 
@@ -378,7 +378,7 @@ public class QueryParameters implements PrismParameters, Cloneable {
      */
     @SuppressWarnings("unused")
     public void removeActionType(ActionType a) {
-        actionTypeRules.remove(a.getName());
+        actionTypeRules.remove(a.name);
     }
 
     /**
@@ -462,7 +462,7 @@ public class QueryParameters implements PrismParameters, Cloneable {
     }
 
     /**
-     * Set the Set of arguements.
+     * Set the Set of arguments.
      * @param foundArgs the foundArgs to set
      */
     public void setFoundArgs(Set<String> foundArgs) {
@@ -543,7 +543,7 @@ public class QueryParameters implements PrismParameters, Cloneable {
     }
 
     /**
-     * Get Defaukts.
+     * Get Defaults.
      * @return List
      */
     public List<String> getDefaultsUsed() {

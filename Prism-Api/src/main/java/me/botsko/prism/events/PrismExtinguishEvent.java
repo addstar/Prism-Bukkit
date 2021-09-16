@@ -55,6 +55,7 @@ public class PrismExtinguishEvent extends Event {
 
     /**
      * Required by bukkit for proper event handling.
+     * @return {@link HandlerList}
      */
     @SuppressWarnings("unused")
     public static HandlerList getHandlerList() {

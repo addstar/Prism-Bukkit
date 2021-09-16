@@ -115,8 +115,8 @@ public class PageCommand implements SubHandler {
         int resultCount = results.getIndexOfFirstResult();
         for (final Handler a : paginated) {
             final ActionMessage am = new ActionMessage(a);
-            if (results.getParameters().hasFlag(Flag.EXTENDED)
-                    || plugin.getConfig().getBoolean("prism.messenger.always-show-extended")) {
+            if (results.getParameters().hasFlag(Flags.EXTENDED)
+                    || plugin.config.parameterConfig.alwaysShowExtended) {
                 am.showExtended();
             }
             am.setResultIndex(resultCount);

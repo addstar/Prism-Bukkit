@@ -1,6 +1,7 @@
 package me.botsko.prism.actions;
 
 import me.botsko.prism.Prism;
+import me.botsko.prism.serializers.SerializationHelper;
 import org.bukkit.block.Block;
 
 public class BlockShiftAction extends GenericAction {
@@ -36,13 +37,13 @@ public class BlockShiftAction extends GenericAction {
 
     @Override
     public String serialize() {
-        return gson().toJson(actionData);
+        return SerializationHelper.gson().toJson(actionData);
     }
 
     @Override
     public void deserialize(String data) {
         if (data != null && data.startsWith("{")) {
-            actionData = gson().fromJson(data, BlockShiftActionData.class);
+            actionData = SerializationHelper.gson().fromJson(data, BlockShiftActionData.class);
         }
     }
 

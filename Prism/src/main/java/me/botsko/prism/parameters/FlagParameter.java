@@ -2,6 +2,7 @@ package me.botsko.prism.parameters;
 
 import me.botsko.prism.actionlibs.QueryParameters;
 import me.botsko.prism.api.commands.Flag;
+import me.botsko.prism.commands.Flags;
 import me.botsko.prism.utils.TypeUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
@@ -29,7 +30,16 @@ public class FlagParameter implements PrismParameterHandler {
 
     @Override
     public boolean applicable(String parameter, CommandSender sender) {
-        return Pattern.compile("(-)([^\\s]+)?").matcher(parameter).matches();
+        if (Pattern.compile("(-)([^\\s]+)?").matcher(parameter).matches()) {
+            final String[] flagComponents = parameter.substring(1).split("=");
+            try {
+                Flag flag = Flags.valueOf(flagComponents[0].replace("-", "_").toUpperCase());
+                return true;
+            } catch (final IllegalArgumentException ex) {
+                return false;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -37,7 +47,7 @@ public class FlagParameter implements PrismParameterHandler {
         final String[] flagComponents = parameter.substring(1).split("=");
         Flag flag;
         try {
-            flag = Flag.valueOf(flagComponents[0].replace("-", "_").toUpperCase());
+            flag = Flags.valueOf(flagComponents[0].replace("-", "_").toUpperCase());
         } catch (final IllegalArgumentException ex) {
             throw new IllegalArgumentException("Flag -" + flagComponents[0] + " not found", ex);
         }
@@ -47,14 +57,14 @@ public class FlagParameter implements PrismParameterHandler {
 
             // Flag has a value
             if (flagComponents.length > 1) {
-                if (flag.equals(Flag.PER_PAGE)) {
+                if (flag.equals(Flags.PER_PAGE)) {
                     if (TypeUtils.isNumeric(flagComponents[1])) {
                         query.setPerPage(Integer.parseInt(flagComponents[1]));
                     } else {
                         throw new IllegalArgumentException(
                                 "Per-page flag value must be a number. Use /prism ? for help.");
                     }
-                } else if (flag.equals(Flag.SHARE)) {
+                } else if (flag.equals(Flags.SHARE)) {
                     for (final String sharePlayer : flagComponents[1].split(",")) {
                         if (sharePlayer.equals(sender.getName())) {
                             throw new IllegalArgumentException("You can't share lookup results with yourself!");
@@ -83,10 +93,10 @@ public class FlagParameter implements PrismParameterHandler {
         Flag flag;
         final String name = flagComponents[0].replace("-", "_").toUpperCase();
         try {
-            flag = Flag.valueOf(name);
+            flag = Flags.valueOf(name);
         } catch (final IllegalArgumentException ex) {
             final List<String> completions = new ArrayList<>();
-            for (final Flag possibleFlag : Flag.values()) {
+            for (final Flag possibleFlag : Flags.values()) {
                 final String flagName = possibleFlag.toString();
                 if (flagName.startsWith(name)) {
                     completions.add("-" + flagName.replace('_', '-').toLowerCase());
@@ -101,7 +111,7 @@ public class FlagParameter implements PrismParameterHandler {
         }
 
         String prefix = "-" + flag.toString().replace('_', '-').toLowerCase() + "=";
-        if (flag.equals(Flag.SHARE)) {
+        if (flag.equals(Flags.SHARE)) {
             final String value = flagComponents[1];
             final int end = value.lastIndexOf(',');
             String partialName = value;
@@ -109,24 +119,19 @@ public class FlagParameter implements PrismParameterHandler {
                 partialName = value.substring(end + 1);
                 prefix = prefix + value.substring(0, end) + ",";
             }
-            partialName = partialName.toLowerCase();
-            final List<String> completions = new ArrayList<>();
-            for (final Player player : Bukkit.getOnlinePlayers()) {
-                if (player.getName().toLowerCase().startsWith(partialName)) {
-                    completions.add(prefix + player.getName());
-                }
-            }
-            return completions;
+            return getPlayerNameCompletions(prefix, partialName);
         }
         return null;
     }
+
+
 
     @Override
     public boolean hasPermission(String parameter, Permissible permissible) {
         final String[] flagComponents = parameter.substring(1).split("=");
         Flag flag;
         try {
-            flag = Flag.valueOf(flagComponents[0].replace("-", "_").toUpperCase());
+            flag = Flags.valueOf(flagComponents[0].replace("-", "_").toUpperCase());
         } catch (final IllegalArgumentException ex) {
             return false;
         }

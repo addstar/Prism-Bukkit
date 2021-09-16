@@ -58,22 +58,22 @@ public class HelpCommand implements SubHandler {
         Audience sender = Prism.getAudiences().sender(s);
         if (failed) {
             sender.sendMessage(Identity.nil(),
-                  Prism.messenger.playerHeaderMsg(Il8nHelper.getMessage("prism-disabled-header")
-                        .color(NamedTextColor.GOLD))
-                        .append(Component.newline())
-                        .append(
-                              Prism.messenger.playerMsg(Il8nHelper.getMessage("prism-disabled-content"))
-                                    .color(NamedTextColor.GOLD))
-                        .append(Component.newline())
-                        .append(
-                              Prism.messenger.playerSubduedHeaderMsg(Il8nHelper.getMessage("discord", ":")
-                                    .color(NamedTextColor.WHITE)
-                                    .append(Component.text(Il8nHelper.getRawMessage("discord-url")))))
-                        .append(Component.newline())
-                        .append(
-                              Prism.messenger.playerSubduedHeaderMsg(Il8nHelper.getMessage("wiki", ":")
-                                    .color(NamedTextColor.WHITE)
-                                    .append(Component.text(Il8nHelper.getRawMessage("wiki-url"))))));
+                    Prism.messenger.playerHeaderMsg(Il8nHelper.getMessage("prism-disabled-header")
+                            .color(NamedTextColor.GOLD))
+                            .append(Component.newline())
+                            .append(
+                                    Prism.messenger.playerMsg(Il8nHelper.getMessage("prism-disabled-content"))
+                                            .color(NamedTextColor.GOLD))
+                            .append(Component.newline())
+                            .append(
+                                    Prism.messenger.playerSubduedHeaderMsg(Il8nHelper.getMessage("discord", ":")
+                                            .color(NamedTextColor.WHITE)
+                                            .append(Component.text(Il8nHelper.getRawMessage("discord-url")))))
+                            .append(Component.newline())
+                            .append(
+                                    Prism.messenger.playerSubduedHeaderMsg(Il8nHelper.getMessage("wiki", ":")
+                                            .color(NamedTextColor.WHITE)
+                                            .append(Component.text(Il8nHelper.getRawMessage("wiki-url"))))));
             return;
         }
         TextComponent component = Prism.messenger.playerHeaderMsg(

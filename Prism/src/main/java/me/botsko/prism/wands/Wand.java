@@ -1,5 +1,6 @@
 package me.botsko.prism.wands;
 
+import me.botsko.prism.config.PrismConfig;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
@@ -18,9 +19,9 @@ public interface Wand {
 
     boolean itemWasGiven();
 
-    String getWandMode();
+    PrismConfig.WandMode getWandMode();
 
-    void setWandMode(String mode);
+    void setWandMode(PrismConfig.WandMode mode);
 
     Material getItem();
 

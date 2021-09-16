@@ -74,22 +74,15 @@ public class InventoryUtils {
      * @return ItemStack
      */
     public static ItemStack getEquipment(EntityEquipment equipment, EquipmentSlot slot) {
-        switch (slot) {
-            case HAND:
-                return equipment.getItemInMainHand();
-            case OFF_HAND:
-                return equipment.getItemInOffHand();
-            case FEET:
-                return equipment.getBoots();
-            case LEGS:
-                return equipment.getLeggings();
-            case CHEST:
-                return equipment.getChestplate();
-            case HEAD:
-                return equipment.getHelmet();
-            default:
-                throw new IllegalArgumentException("EquipmentSlot " + slot.name() + " not recognised");
-        }
+        return switch (slot) {
+            case HAND -> equipment.getItemInMainHand();
+            case OFF_HAND -> equipment.getItemInOffHand();
+            case FEET -> equipment.getBoots();
+            case LEGS -> equipment.getLeggings();
+            case CHEST -> equipment.getChestplate();
+            case HEAD -> equipment.getHelmet();
+            default -> throw new IllegalArgumentException("EquipmentSlot " + slot.name() + " not recognised");
+        };
     }
 
     /**
@@ -100,27 +93,15 @@ public class InventoryUtils {
      */
     public static void setEquipment(EntityEquipment equipment, EquipmentSlot slot, ItemStack item) {
         switch (slot) {
-            case HAND:
-                equipment.setItemInMainHand(item);
-                break;
-            case OFF_HAND:
-                equipment.setItemInOffHand(item);
-                break;
-            case FEET:
-                equipment.setBoots(item);
-                break;
-            case LEGS:
-                equipment.setLeggings(item);
-                break;
-            case CHEST:
-                equipment.setChestplate(item);
-                break;
-            case HEAD:
-                equipment.setHelmet(item);
-                break;
-            default:
-                //should never be hit
-                break;
+            case HAND -> equipment.setItemInMainHand(item);
+            case OFF_HAND -> equipment.setItemInOffHand(item);
+            case FEET -> equipment.setBoots(item);
+            case LEGS -> equipment.setLeggings(item);
+            case CHEST -> equipment.setChestplate(item);
+            case HEAD -> equipment.setHelmet(item);
+            default -> {
+            }
+            //should never be hit
         }
     }
 

@@ -1,6 +1,6 @@
 package me.botsko.prism.database;
 
-import me.botsko.prism.Prism;
+import me.botsko.prism.PrismLogHandler;
 import me.botsko.prism.api.PrismParameters;
 
 import javax.annotation.Nullable;
@@ -10,12 +10,13 @@ import java.util.Collection;
 public abstract class QueryBuilder {
     protected final String tableNameData;
     protected final String tableNameDataExtra;
-    protected PrismDataSource dataSource;
+    protected final PrismDataSource dataSource;
     protected Collection<String> columns = new ArrayList<>();
     protected Collection<String> conditions = new ArrayList<>();
     protected PrismParameters parameters;
     protected boolean shouldGroup;
-    protected String prefix;
+    @SuppressWarnings("UnusedAssignment")
+    protected String prefix = "prism_";
     protected boolean shouldPause;
 
     /**
@@ -63,8 +64,8 @@ public abstract class QueryBuilder {
 
         String query = select() + where() + group() + order() + limit();
 
-        query += ";";
-        Prism.debug(query);
+        //query += ";"; //optional for single queries anyway
+        PrismLogHandler.debug(query);
         return query;
 
     }

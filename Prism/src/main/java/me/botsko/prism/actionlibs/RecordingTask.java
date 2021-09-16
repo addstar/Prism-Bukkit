@@ -1,17 +1,19 @@
 package me.botsko.prism.actionlibs;
 
 import me.botsko.prism.Prism;
+import me.botsko.prism.PrismLogHandler;
 import me.botsko.prism.api.actions.Handler;
 import me.botsko.prism.database.InsertQuery;
 import me.botsko.prism.measurement.QueueStats;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 
 public class RecordingTask implements Runnable {
 
     private final Prism plugin;
     private static int actionsPerInsert;
+    private final int maxFailures;
+    private int recordingTickDelay;
 
     public static void setActionsPerInsert(int adjust) {
         actionsPerInsert = adjust;
@@ -25,7 +27,11 @@ public class RecordingTask implements Runnable {
      */
     public RecordingTask(Prism plugin) {
         this.plugin = plugin;
-        actionsPerInsert = plugin.getConfig().getInt("prism.query.actions-per-insert-batch");
+        actionsPerInsert = plugin.config.queueConfig.actionsPerBatch;
+        maxFailures = plugin.config.queueConfig.maxFailures;
+        recordingTickDelay = plugin.config.queueConfig.emptyTickDelay;
+
+
     }
 
     /**
@@ -35,7 +41,7 @@ public class RecordingTask implements Runnable {
      * @return rows affected.
      */
     public static long insertActionIntoDatabase(Handler a) {
-        return Prism.getPrismDataSource().getDataInsertionQuery().insertActionIntoDatabase(a);
+        return Prism.getInstance().getPrismDataSource().getDataInsertionQuery().insertActionIntoDatabase(a);
     }
 
     /**
@@ -57,50 +63,41 @@ public class RecordingTask implements Runnable {
             perBatch = 1000;
         }
         if (!RecordingQueue.getQueue().isEmpty()) {
-            if (Prism.getPrismDataSource().isPaused()) {
-                Prism.log(
-                        "Prism database paused. An external actor has paused database processing..."
+            if (Prism.getInstance().getPrismDataSource().isPaused()) {
+                PrismLogHandler.log("Prism database paused. An external actor has paused database processing..."
                                 + "scheduling next recording");
                 scheduleNextRecording();
                 return;
             }
             long start = System.currentTimeMillis();
-            Prism.debug("Beginning batch insert from queue. " + start);
-            try (
-                    Connection conn = Prism.getPrismDataSource().getConnection()
-            ) {
-                if ((conn == null) || (conn.isClosed())) {
-                    if (RecordingManager.failedDbConnectionCount == 0) {
-                        Prism.log(
-                                "Prism database error. Connection should be there but it's not. "
-                                        + "Leaving actions to log in queue.");
-                    }
-                    RecordingManager.failedDbConnectionCount++;
-                    if (RecordingManager.failedDbConnectionCount > plugin.getConfig()
-                            .getInt("prism.query.max-failures-before-wait")) {
-                        Prism.log("Too many problems connecting. Giving up for a bit.");
-                        scheduleNextRecording();
-                    }
-                    Prism.debug("Database connection still missing, incrementing count.");
-                    return;
-                } else {
-                    RecordingManager.failedDbConnectionCount = 0;
+            PrismLogHandler.debug("Beginning batch insert from queue. " + start);
+            StringBuilder builder = new StringBuilder();
+            if (Prism.getInstance().getPrismDataSource().reportDataSource(builder)) {
+                RecordingManager.failedDbConnectionCount = 0;
+            } else {
+                if (RecordingManager.failedDbConnectionCount == 0) {
+                    PrismLogHandler.log("Prism database error. Connection should be there but it's not. "
+                            + "Leaving actions to log in queue.");
+                    PrismLogHandler.log(builder.toString());
                 }
-            } catch (SQLException e) {
-                e.printStackTrace();
-                Prism.getPrismDataSource().handleDataSourceException(e);
+                RecordingManager.failedDbConnectionCount++;
+                if (RecordingManager.failedDbConnectionCount > maxFailures) {
+                    PrismLogHandler.log("Too many problems connecting. Giving up for a bit.");
+                    scheduleNextRecording();
+                }
+                PrismLogHandler.debug("Database connection still missing, incrementing count.");
                 return;
             }
             InsertQuery batchedQuery;
             try {
-                batchedQuery = Prism.getPrismDataSource().getDataInsertionQuery();
+                batchedQuery = Prism.getInstance().getPrismDataSource().getDataInsertionQuery();
                 batchedQuery.createBatch();
             } catch (Exception e) {
                 e.printStackTrace();
                 if (e instanceof SQLException) {
-                    Prism.getPrismDataSource().handleDataSourceException((SQLException) e);
+                    Prism.getInstance().getPrismDataSource().handleDataSourceException((SQLException) e);
                 }
-                Prism.debug("Database connection issue;");
+                PrismLogHandler.debug("Database connection issue;");
                 RecordingManager.failedDbConnectionCount++;
                 return;
             }
@@ -121,7 +118,7 @@ public class RecordingTask implements Runnable {
 
                 // Break out of the loop and just commit what we have
                 if (i >= perBatch) {
-                    Prism.debug("Recorder: Batch max exceeded, running insert. Queue remaining: "
+                    PrismLogHandler.debug("Recorder: Batch max exceeded, running insert. Queue remaining: "
                             + RecordingQueue.getQueue().size());
                     break;
                 }
@@ -148,7 +145,7 @@ public class RecordingTask implements Runnable {
     @Override
     public void run() {
         if (RecordingManager.failedDbConnectionCount > 5) {
-            Prism.getPrismDataSource().rebuildDataSource(); // force rebuild pool after several failures
+            Prism.getInstance().getPrismDataSource().rebuildDataSource(); // force rebuild pool after several failures
         }
         save();
         scheduleNextRecording();
@@ -162,16 +159,14 @@ public class RecordingTask implements Runnable {
     private int getTickDelayForNextBatch() {
 
         // If we have too many rejected connections, increase the schedule
-        if (RecordingManager.failedDbConnectionCount > plugin.getConfig()
-                .getInt("prism.query.max-failures-before-wait")) {
+        if (RecordingManager.failedDbConnectionCount > maxFailures) {
             return RecordingManager.failedDbConnectionCount * 20;
         }
 
-        int recorderTickDelay = plugin.getConfig().getInt("prism.queue-empty-tick-delay");
-        if (recorderTickDelay < 1) {
-            recorderTickDelay = 3;
+        if (recordingTickDelay < 1) {
+            recordingTickDelay = 3;
         }
-        return recorderTickDelay;
+        return recordingTickDelay;
     }
 
     /**
@@ -179,12 +174,11 @@ public class RecordingTask implements Runnable {
      */
     private void scheduleNextRecording() {
         if (!plugin.isEnabled()) {
-            Prism.log(
-                    "Can't schedule new recording tasks as plugin is now disabled. If you're shutting"
+            PrismLogHandler.log("Can't schedule new recording tasks as plugin is now disabled. If you're shutting"
                             + " down the server, ignore me.");
             return;
         }
-        plugin.recordingTask = plugin.getServer().getScheduler().runTaskLaterAsynchronously(plugin,
-                this, getTickDelayForNextBatch());
+        plugin.getTaskManager().setRecordingTask(plugin.getServer().getScheduler().runTaskLaterAsynchronously(plugin,
+                this, getTickDelayForNextBatch()));
     }
 }

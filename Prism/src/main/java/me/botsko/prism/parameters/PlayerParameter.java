@@ -2,11 +2,8 @@ package me.botsko.prism.parameters;
 
 import me.botsko.prism.actionlibs.QueryParameters;
 import me.botsko.prism.api.actions.MatchRule;
-import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -53,13 +50,6 @@ public class PlayerParameter extends SimplePrismParameterHandler {
             prefix = prefix + partialName.substring(0, end) + ",";
             partialName = partialName.substring(end + 1);
         }
-        partialName = partialName.toLowerCase();
-        final List<String> completions = new ArrayList<>();
-        for (final Player player : Bukkit.getOnlinePlayers()) {
-            if (player.getName().toLowerCase().startsWith(partialName)) {
-                completions.add(prefix + player.getName());
-            }
-        }
-        return completions;
+        return getPlayerNameCompletions(prefix, partialName);
     }
 }

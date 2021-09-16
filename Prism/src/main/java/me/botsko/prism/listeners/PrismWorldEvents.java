@@ -3,6 +3,7 @@ package me.botsko.prism.listeners;
 import me.botsko.prism.Prism;
 import me.botsko.prism.actionlibs.ActionFactory;
 import me.botsko.prism.actionlibs.RecordingQueue;
+import me.botsko.prism.api.actions.ActionType;
 import me.botsko.prism.utils.block.Utilities;
 import org.bukkit.TreeType;
 import org.bukkit.block.BlockState;
@@ -23,10 +24,10 @@ public class PrismWorldEvents implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onStructureGrow(final StructureGrowEvent event) {
-        String type = "tree-grow";
+        ActionType type = ActionType.TREE_GROW;
         final TreeType species = event.getSpecies();
         if (species.name().toLowerCase().contains("mushroom")) {
-            type = "mushroom-grow";
+            type = ActionType.MUSHROOM_GROW;
         }
         if (!Prism.getIgnore().event(type, event.getWorld())) {
             return;
@@ -52,7 +53,7 @@ public class PrismWorldEvents implements Listener {
         final String worldName = event.getWorld().getName();
 
         if (!Prism.prismWorlds.containsKey(worldName)) {
-            Prism.getPrismDataSource().addWorldName(worldName);
+            Prism.getInstance().getPrismDataSource().addWorldName(worldName);
         }
     }
 
@@ -62,7 +63,7 @@ public class PrismWorldEvents implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR,ignoreCancelled = true)
     public void onPortalCreate(final PortalCreateEvent event) {
-        String type = "portal-create";
+        ActionType type = ActionType.PORTAL_CREATE;
         if (!Prism.getIgnore().event(type, event.getWorld())) {
             return;
         }

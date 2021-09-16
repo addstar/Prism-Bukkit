@@ -1,53 +1,44 @@
 package me.botsko.prism.actionlibs;
 
 import me.botsko.prism.Prism;
-import org.bukkit.Bukkit;
+import me.botsko.prism.PrismLogHandler;
 import org.bukkit.scheduler.BukkitScheduler;
-
-import java.sql.Connection;
-import java.sql.SQLException;
 
 public class InternalAffairs implements Runnable {
 
     private final Prism plugin;
 
     public InternalAffairs(Prism plugin) {
-        Prism.debug("[InternalAffairs] Keeping watch over the watchers.");
+        PrismLogHandler.debug("[InternalAffairs] Keeping watch over the watchers.");
         this.plugin = plugin;
     }
 
     @Override
     public void run() {
+        if (reportStatusGood()) {
+            return;
+        }
+        PrismLogHandler.log("[InternalAffairs] Recorder is NOT active... checking database");
 
-        if (plugin.recordingTask != null) {
+        StringBuilder result = new StringBuilder();
+        if (Prism.getInstance().getPrismDataSource().reportDataSource(result)) {
+            PrismLogHandler.log("[Internal Affairs]" + result);
+            plugin.getTaskManager().actionRecorderTask();
+            reportStatusGood();
+        } else {
+            PrismLogHandler.warn(result.toString());
+        }
+    }
 
-            final int taskId = plugin.recordingTask.getTaskId();
-
-            final BukkitScheduler scheduler = Bukkit.getScheduler();
-
-            // is recording task running?
+    private boolean reportStatusGood() {
+        final BukkitScheduler scheduler = plugin.getServer().getScheduler();
+        if (plugin.getTaskManager().getRecordingTask() != null) {
+            final int taskId = plugin.getTaskManager().getRecordingTask().getTaskId();
             if (scheduler.isCurrentlyRunning(taskId) || scheduler.isQueued(taskId)) {
-                Prism.debug("[InternalAffairs] Recorder is currently active. All is good.");
-                return;
+                PrismLogHandler.debug("[InternalAffairs] Recorder is currently active. All is good.");
+                return true;
             }
         }
-
-        Prism.log("[InternalAffairs] Recorder is NOT active... checking database");
-
-        // is db connection valid?
-        try (Connection conn = Prism.getPrismDataSource().getConnection()) {
-            if (conn == null) {
-                Prism.log("[InternalAffairs] Pool returned NULL instead of a valid connection.");
-            } else if (conn.isClosed()) {
-                Prism.log("[InternalAffairs] Pool returned an already closed connection.");
-            } else if (conn.isValid(5)) {
-                Prism.log("[InternalAffairs] Pool returned valid connection!");
-                Prism.log("[InternalAffairs] Restarting scheduled recorder tasks");
-                plugin.actionRecorderTask();
-            }
-        } catch (final SQLException e) {
-            Prism.debug("[InternalAffairs] Error: " + e.getMessage());
-            e.printStackTrace();
-        }
+        return false;
     }
 }

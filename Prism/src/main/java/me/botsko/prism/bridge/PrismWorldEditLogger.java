@@ -10,6 +10,7 @@ import com.sk89q.worldedit.world.block.BlockStateHolder;
 import me.botsko.prism.Prism;
 import me.botsko.prism.actionlibs.ActionFactory;
 import me.botsko.prism.actionlibs.RecordingQueue;
+import me.botsko.prism.api.actions.ActionType;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -35,13 +36,13 @@ public class PrismWorldEditLogger extends AbstractDelegateExtent {
     }
 
     @Override
-    public boolean setBlock(BlockVector3 pt, BlockStateHolder newBlock) throws WorldEditException {
-        if (Prism.config.getBoolean("prism.tracking.world-edit")) {
+    public <B extends BlockStateHolder<B>> boolean setBlock(BlockVector3 pt, B newBlock) throws WorldEditException {
+        if (Prism.getInstance().config.trackingConfig.trackers.get(ActionType.WORLD_EDIT)) {
             Location loc = BukkitAdapter.adapt(world, pt);
             Block oldBlock = loc.getBlock();
             Material newMaterial = BukkitAdapter.adapt(newBlock.getBlockType());
             BlockData newData = BukkitAdapter.adapt(newBlock);
-            RecordingQueue.addToQueue(ActionFactory.createBlockChange("world-edit", loc, oldBlock.getType(),
+            RecordingQueue.addToQueue(ActionFactory.createBlockChange(ActionType.WORLD_EDIT, loc, oldBlock.getType(),
                     oldBlock.getBlockData(), newMaterial, newData, Bukkit.getPlayer(player.getUniqueId())));
         }
         return super.setBlock(pt, newBlock);

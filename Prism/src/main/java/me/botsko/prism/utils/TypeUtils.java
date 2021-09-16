@@ -1,7 +1,6 @@
 package me.botsko.prism.utils;
 
 import com.sk89q.worldedit.util.formatting.text.serializer.plain.PlainComponentSerializer;
-import me.botsko.prism.Prism;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
@@ -9,7 +8,6 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.text.serializer.legacy.LegacyFormat;
 
 import java.text.DecimalFormat;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -93,7 +91,7 @@ public class TypeUtils {
             }
         }
         if (hex.length() != 7 && !hex.startsWith("#")) {
-            Prism.log("Could not decode as hex:" + hex);
+            me.botsko.prism.PrismLogHandler.log("Could not decode as hex:" + hex);
             TextColor color = NamedTextColor.NAMES.value(hex);
             if (color != null) {
                 return color;
@@ -125,7 +123,7 @@ public class TypeUtils {
      * @param delimiter String
      * @return String
      */
-    public static String join(Collection<String> s, String delimiter) {
+    public static String join(Iterable<String> s, String delimiter) {
         StringBuilder buffer = new StringBuilder();
         Iterator<?> iter = s.iterator();
         while (iter.hasNext()) {
@@ -227,9 +225,7 @@ public class TypeUtils {
         }
         StringBuilder sb = new StringBuilder();
         int rest = desiredLength - str.length();
-        for (int i = 1; i < rest; i++) {
-            sb.append(" ");
-        }
-        return str + sb.toString();
+        sb.append(" ".repeat(rest - 1));
+        return str + sb;
     }
 }

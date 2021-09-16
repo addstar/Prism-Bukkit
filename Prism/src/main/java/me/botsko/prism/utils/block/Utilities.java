@@ -22,10 +22,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumMap;
-import java.util.Locale;
+import java.util.*;
 
 public class Utilities {
 
@@ -407,13 +404,10 @@ public class Utilities {
     public static boolean isHangingEntity(Entity entity) {
         EntityType type = entity.getType();
 
-        switch (type) {
-            case ITEM_FRAME:
-            case PAINTING:
-                return true;
-            default:
-                return false;
-        }
+        return switch (type) {
+            case ITEM_FRAME, PAINTING -> true;
+            default -> false;
+        };
     }
 
     /**
@@ -423,22 +417,13 @@ public class Utilities {
      * @return BlockFace  the new block face
      */
     public static BlockFace getRelativeFaceLeft(BlockFace in) {
-        switch (in) {
-            case NORTH:
-                return BlockFace.WEST;
-
-            case EAST:
-                return BlockFace.NORTH;
-
-            case SOUTH:
-                return BlockFace.EAST;
-
-            case WEST:
-                return BlockFace.SOUTH;
-
-            default:
-                throw new IllegalArgumentException("Only cardinal directions are supported");
-        }
+        return switch (in) {
+            case NORTH -> BlockFace.WEST;
+            case EAST -> BlockFace.NORTH;
+            case SOUTH -> BlockFace.EAST;
+            case WEST -> BlockFace.SOUTH;
+            default -> throw new IllegalArgumentException("Only cardinal directions are supported");
+        };
     }
 
     /**
@@ -448,22 +433,13 @@ public class Utilities {
      * @return BlockFace
      */
     public static BlockFace getRelativeFaceRight(BlockFace in) {
-        switch (in) {
-            case NORTH:
-                return BlockFace.EAST;
-
-            case EAST:
-                return BlockFace.SOUTH;
-
-            case SOUTH:
-                return BlockFace.WEST;
-
-            case WEST:
-                return BlockFace.NORTH;
-
-            default:
-                throw new IllegalArgumentException("Only cardinal directions are supported");
-        }
+        return switch (in) {
+            case NORTH -> BlockFace.EAST;
+            case EAST -> BlockFace.SOUTH;
+            case SOUTH -> BlockFace.WEST;
+            case WEST -> BlockFace.NORTH;
+            default -> throw new IllegalArgumentException("Only cardinal directions are supported");
+        };
     }
 
     /**
@@ -485,8 +461,7 @@ public class Utilities {
 
         BlockData data = block.getBlockData();
 
-        if (data instanceof Chest) {
-            Chest chest = (Chest) data;
+        if (data instanceof Chest chest) {
             return handleChest(chest,block);
         } else if (data instanceof Bed) {
             return handleBed((Bed) data,block);
@@ -500,18 +475,12 @@ public class Utilities {
     private static Block handleChest(Chest data, BlockState block) {
 
         BlockFace facing = data.getFacing();
-        switch (data.getType()) {
-            case LEFT:
-                return block.getBlock().getRelative(getRelativeFaceRight(facing));
-
-            case RIGHT:
-                return block.getBlock().getRelative(getRelativeFaceLeft(facing));
-
-            case SINGLE:
-                return null;
-            default:
-                throw new IllegalStateException("Unexpected value: " + data.getType());
-        }
+        return switch (data.getType()) {
+            case LEFT -> block.getBlock().getRelative(getRelativeFaceRight(facing));
+            case RIGHT -> block.getBlock().getRelative(getRelativeFaceLeft(facing));
+            case SINGLE -> null;
+            default -> throw new IllegalStateException("Unexpected value: " + data.getType());
+        };
     }
 
     private static Block handleBisected(Bisected data, BlockState block) {
@@ -539,14 +508,12 @@ public class Utilities {
      */
     public static Block getBaseBlock(Block block) {
         BlockData data = block.getBlockData();
-        if (data instanceof Bed) {
-            Bed bed = (Bed) data;
+        if (data instanceof Bed bed) {
 
             if (bed.getPart() == Part.HEAD) {
                 return block.getRelative(bed.getFacing().getOppositeFace());
             }
-        } else if (data instanceof Bisected && !(data instanceof Stairs) && !(data instanceof TrapDoor)) {
-            Bisected bisected = (Bisected) data;
+        } else if (data instanceof Bisected bisected && !(data instanceof Stairs) && !(data instanceof TrapDoor)) {
 
             if (bisected.getHalf() == Half.TOP) {
                 return block.getRelative(BlockFace.DOWN);
@@ -589,12 +556,7 @@ public class Utilities {
 
         ArrayList<Block> foundBlocks = new ArrayList<>();
         ArrayList<Location> locations;
-        if (foundLocations == null) {
-            locations = new ArrayList<>();
-        } else {
-            locations = foundLocations;
-        }
-
+        locations = Objects.requireNonNullElseGet(foundLocations, ArrayList::new);
         locations.add(currBlock.getLocation());
 
         for (int x = -1; x <= 1; x++) {

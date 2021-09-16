@@ -2,6 +2,7 @@ package me.botsko.prism.database.sql;
 
 import me.botsko.prism.Il8nHelper;
 import me.botsko.prism.Prism;
+import me.botsko.prism.PrismLogHandler;
 import me.botsko.prism.api.PrismParameters;
 import me.botsko.prism.database.ActionReportQuery;
 import me.botsko.prism.database.PrismDataSource;
@@ -38,7 +39,7 @@ public class SqlActionReportQueryBuilder extends SqlSelectQueryBuilder implement
 
         query += ";";
 
-        Prism.debug(query);
+        PrismLogHandler.debug(query);
 
         return query;
 
@@ -46,10 +47,12 @@ public class SqlActionReportQueryBuilder extends SqlSelectQueryBuilder implement
 
     @Override
     public String select() {
-        return "SELECT COUNT(*), a.action " + "FROM " + prefix + "data " + "INNER JOIN " + prefix
-                + "actions a ON a.action_id = " + prefix + "data.action_id " + where() + " " + "GROUP BY a.action_id "
+        return "SELECT COUNT(*), a.action " + "FROM " + prefix + "data "
+                + "INNER JOIN " + prefix + "actions a "
+                + "ON a.action_id = " + prefix + "data.action_id "
+                + where() + " "
+                + "GROUP BY a.action_id "
                 + "ORDER BY COUNT(*) DESC";
-
     }
 
     @Override

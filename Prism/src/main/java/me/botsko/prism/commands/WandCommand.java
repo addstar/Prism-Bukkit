@@ -2,7 +2,9 @@ package me.botsko.prism.commands;
 
 import me.botsko.prism.Il8nHelper;
 import me.botsko.prism.Prism;
+import me.botsko.prism.PrismLogHandler;
 import me.botsko.prism.commandlibs.CallInfo;
+import me.botsko.prism.config.PrismConfig;
 import me.botsko.prism.settings.Settings;
 import me.botsko.prism.utils.InventoryUtils;
 import me.botsko.prism.utils.ItemUtils;
@@ -23,7 +25,6 @@ import org.jetbrains.annotations.PropertyKey;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.regex.Pattern;
 
 public class WandCommand extends AbstractCommand {
 
@@ -61,38 +62,35 @@ public class WandCommand extends AbstractCommand {
         Prism.playersWithActiveTools.remove(call.getPlayer().getName());
 
         // Determine default mode
-        String mode = plugin.getConfig().getString("prism.wands.default-mode");
+        PrismConfig.WandMode mode = plugin.config.wandConfig.defaultMode;
 
         // Check if the player has a personal override
-        if (plugin.getConfig().getBoolean("prism.wands.allow-user-override")) {
-            final String personalMode = Settings.getSetting("wand.mode", call.getPlayer());
+        boolean allowUserOveride = plugin.config.wandConfig.allowUserOverride;
+        if (allowUserOveride) {
+            final PrismConfig.WandMode personalMode = PrismConfig.WandMode.valueOf(
+                    Settings.getSetting("wand.mode", call.getPlayer()));
             if (personalMode != null) {
                 mode = personalMode;
             }
         }
 
         // Determine which item we're using.
-        String toolKey = null;
-        if ("item".equals(mode)) {
-            toolKey = plugin.getConfig().getString("prism.wands.default-item-mode-id");
-        } else if ("block".equals(mode)) {
-            toolKey = plugin.getConfig().getString("prism.wands.default-block-mode-id");
+        Material toolKey = null;
+        if (PrismConfig.WandMode.ITEM.equals(mode)) {
+            toolKey = plugin.config.wandConfig.defaultModeItem;
+        } else if (PrismConfig.WandMode.BLOCK.equals(mode)) {
+            toolKey = plugin.config.wandConfig.defaultModeBlock;
         }
 
         // Check if the player has a personal override
-        if (plugin.getConfig().getBoolean("prism.wands.allow-user-override")) {
-            final String personalToolKey = Settings.getSetting("wand.item", call.getPlayer());
+        if (allowUserOveride) {
+            final Material personalToolKey = Material.valueOf(Settings.getSetting("wand.item", call.getPlayer()));
             if (personalToolKey != null) {
                 toolKey = personalToolKey;
             }
         }
 
-        Material itemMaterial = null;
-
-        if (toolKey != null) {
-            itemMaterial = Material.matchMaterial(toolKey);
-        }
-
+        Material itemMaterial = toolKey;
         String wandOn = "";
         String itemName = "";
         StringBuilder parameters = new StringBuilder();
@@ -109,8 +107,9 @@ public class WandCommand extends AbstractCommand {
             final String itemNameFinal = itemName;
             Prism.messenger.sendMessage(call.getPlayer(),
                     Prism.messenger.playerError(Il8nHelper.getMessage("wand-bad")
-                            .replaceText(Pattern.compile("<itemName>"),
-                                  builder -> Component.text().content(itemNameFinal))));
+                            .replaceText(builder -> builder.match("<itemName>").replacement(
+                                    Component.text(itemNameFinal))))
+            );
             return;
         }
 
@@ -120,8 +119,7 @@ public class WandCommand extends AbstractCommand {
           Inspector wand
          */
         switch (type.toLowerCase()) {
-            case "i":
-            case "inpect":
+            case "i", "inpect" -> {
                 if (checkNoPermissions(call.getPlayer(), "prism.lookup", "prism.wand.inspect")) {
                     return;
                 }
@@ -132,9 +130,8 @@ public class WandCommand extends AbstractCommand {
                     sendWandStatus(call.getPlayer(), "wand-inspection", true, wandOn, parameters.toString());
                     enabled = true;
                 }
-                break;
-            case "p":
-            case "profile":
+            }
+            case "p", "profile" -> {
                 if (checkNoPermissions(call.getPlayer(), "prism.lookup", "prism.wand.profile")) {
                     return;
                 }
@@ -145,9 +142,8 @@ public class WandCommand extends AbstractCommand {
                     enabled = true;
                     sendWandStatus(call.getPlayer(), "wand-profile", true, wandOn, parameters.toString());
                 }
-                break;
-            case "rollback":
-            case "rb":
+            }
+            case "rollback", "rb" -> {
                 if (checkNoPermissions(call.getSender(), "prism.rollback", "prism.wand.rollback")) {
                     return;
                 }
@@ -158,34 +154,32 @@ public class WandCommand extends AbstractCommand {
                     sendWandStatus(call.getPlayer(), "wand-rollback", true, wandOn, parameters.toString());
                     enabled = true;
                 }
-                break;
-            case "restore":
-            case "rs":
-                if (checkNoPermissions(call.getPlayer(), "prism.restor", "prism.wand.restore")) {
+            }
+            case "restore", "rs" -> {
+                if (checkNoPermissions(call.getPlayer(), "prism.restore", "prism.wand.restore")) {
                     return;
                 }
                 if (oldWand instanceof RestoreWand) {
-                    sendWandStatus(call.getPlayer(), "wand-current", false, wandOn, parameters.toString());
+                    sendWandStatus(call.getPlayer(), "wand-restore", false, wandOn, parameters.toString());
 
                 } else {
                     wand = new RestoreWand(plugin);
                     enabled = true;
-                    sendWandStatus(call.getPlayer(), "wand-current", true, wandOn, parameters.toString());
+                    sendWandStatus(call.getPlayer(), "wand-restore", true, wandOn, parameters.toString());
                 }
-                break;
-            case "off":
-                sendWandStatus(call.getPlayer(), "wand-current", false, wandOn, parameters.toString());
-                break;
-            default:
+            }
+            case "off" -> sendWandStatus(call.getPlayer(), "wand-current", false, wandOn, parameters.toString());
+            default -> {
                 Prism.messenger.sendMessage(call.getPlayer(),
                         Prism.messenger.playerError(Il8nHelper.getMessage("wand-invalid")));
                 return;
+            }
         }
         constructWand(call, enabled, itemMaterial, mode, wand, isInspect, oldWand);
     }
 
     private void constructWand(CallInfo call, boolean enabled,
-                               final Material itemMaterial, String mode, Wand wand,
+                               final Material itemMaterial, PrismConfig.WandMode mode, Wand wand,
                                boolean isInspect,
                                Wand oldWand) {
         Material item = itemMaterial;
@@ -193,7 +187,7 @@ public class WandCommand extends AbstractCommand {
         if (enabled) {
 
             if (item == null) {
-                if (Objects.equals(mode, "block")) {
+                if (Objects.equals(mode, PrismConfig.WandMode.BLOCK)) {
                     item = Material.SPRUCE_LOG;
                 } else if (Objects.equals(mode, "item")) {
                     item = Material.STICK;
@@ -205,10 +199,10 @@ public class WandCommand extends AbstractCommand {
             wand.setWandMode(mode);
             wand.setItem(item);
 
-            Prism.debug("Wand activated for player - mode: " + mode + " Item:" + item);
+            PrismLogHandler.debug("Wand activated for player - mode: " + mode + " Item:" + item);
 
             // Move any existing item to the hand, otherwise give it to them
-            if (plugin.getConfig().getBoolean("prism.wands.auto-equip")) {
+            if (plugin.config.wandConfig.autoEquip) {
                 if (!InventoryUtils.moveItemToHand(inv, item)) {
                     // Store the item they're holding, if any
                     wand.setOriginallyHeldItem(inv.getItemInMainHand());
@@ -259,15 +253,13 @@ public class WandCommand extends AbstractCommand {
         }
         TextComponent out = Prism.messenger
                 .playerHeaderMsg(Il8nHelper.getMessage(wandStatusMessageKey)
-                        .replaceText(Pattern.compile("<status>"),
-                              builder -> Component.text().append(state)));
+                        .replaceText(builder -> builder.match("<status").replacement(state))
+                );
         if (status) {
-            out.append(Component.newline())
-                    .append(Il8nHelper.getMessage("wand-item-type")
-                            .replaceText(Pattern.compile("<itemType>"),
-                                  builder -> Component.text().content(wandType))
-                            .replaceText(Pattern.compile("<parameters"),
-                                  builder -> Component.text().content(parameters)));
+            out = out.append(Component.newline()).append(Il8nHelper.getMessage("wand-item-type")
+                            .replaceText(builder -> builder.match("<itemType>").replacement(wandType).once())
+                            .replaceText(builder -> builder.match("<parameters>").replacement(parameters))
+                    );
         }
         Prism.messenger.sendMessage(sender, out);
 

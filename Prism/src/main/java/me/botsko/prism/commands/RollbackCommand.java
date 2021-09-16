@@ -25,8 +25,8 @@ public class RollbackCommand extends AbstractCommand {
     @Override
     public void handle(final CallInfo call) {
 
-        final QueryParameters parameters = PreprocessArgs.process(plugin, call.getSender(), call.getArgs(),
-                PrismProcessType.ROLLBACK, 1, !plugin.getConfig().getBoolean("prism.queries.never-use-defaults"));
+        final QueryParameters parameters = PreprocessArgs.process(plugin.config, call.getSender(), call.getArgs(),
+                PrismProcessType.ROLLBACK, 1, !plugin.config.parameterConfig.neverUseDefaults);
         if (parameters == null) {
             return;
         }
