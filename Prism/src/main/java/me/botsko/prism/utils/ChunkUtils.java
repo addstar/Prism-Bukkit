@@ -3,6 +3,7 @@ package me.botsko.prism.utils;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
@@ -29,8 +30,9 @@ public class ChunkUtils {
      * @param blocks Iterable Block list,
      */
     public static void setPreviewBoundaryBlocks(Player player, Iterable<Block> blocks, Material m) {
+        BlockData blockData = m.createBlockData();
         for (Block block : blocks) {
-            EntityUtils.sendBlockChange(player, block.getLocation(), block.getBlockData());
+            EntityUtils.sendBlockChange(player, block.getLocation(), blockData);
         }
     }
 

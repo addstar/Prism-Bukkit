@@ -12,7 +12,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.UUID;
 
 /**
  * Created for use for the Add5tar MC Minecraft server
@@ -41,13 +40,13 @@ public class SqlSelectProcessQuery extends SqlSelectQueryBuilder implements Sele
     protected String select() {
         if (getLastID) {
             return "SELECT id FROM " + prefix + "data JOIN " + prefix + "players p ON p.player_id = " + prefix
-                    + "data.player_id";
+                    + "data.player_id ";
         }
-        String sql = "SELECT id, action, epoch, world, player, player_uuid, x, y, z, data FROM " + prefix
+        String sql = "SELECT id, action, epoch, world, player, HEX(player_uuid), x, y, z, data FROM " + prefix
                 + "data d";
-        sql += " INNER JOIN " + prefix + "players p ON p.player_id = d.player_id ";
-        sql += " INNER JOIN " + prefix + "actions a ON a.action_id = d.action_id ";
-        sql += " INNER JOIN " + prefix + "worlds w ON w.world_id = d.world_id ";
+        sql += " INNER JOIN " + prefix + "players p ON p.player_id = d.player_id";
+        sql += " INNER JOIN " + prefix + "actions a ON a.action_id = d.action_id";
+        sql += " INNER JOIN " + prefix + "worlds w ON w.world_id = d.world_id";
         sql += " LEFT JOIN " + prefix + "data_extra ex ON ex.data_id = d.id ";
         return sql;
     }
@@ -57,33 +56,32 @@ public class SqlSelectProcessQuery extends SqlSelectQueryBuilder implements Sele
             //bit hacky here we are using the id parameter which should generally refer to a player.
             final int action_id = Prism.prismActions.get("prism-process");
             String playerName = parameters.getKeyword();
-            return "WHERE action_id = " + action_id + " AND p.player = " + playerName;
+            return "WHERE action_id = " + action_id + " AND p.player = '" + playerName + "' ";
         }
         //bit hacky here we are using the id parameter which should generally refer to a player.
         final long id = parameters.getId();
-        return " WHERE d.id = " + id;
+        return "WHERE d.id = " + id + " ";
     }
 
     @Override
     protected String group() {
-
-        return " ";
+        return "";
     }
 
     @Override
     protected String order() {
         if (getLastID) {
-            return " ORDER BY id DESC ";
+            return "ORDER BY id DESC ";
         }
-        return " ";
+        return "";
     }
 
     @Override
     protected String limit() {
         if (getLastID) {
-            return " LIMIT 1";
+            return "LIMIT 1";
         }
-        return " ";
+        return "";
     }
 
     @Override
@@ -111,7 +109,7 @@ public class SqlSelectProcessQuery extends SqlSelectQueryBuilder implements Sele
                 process.setUnixEpoch(rs.getLong("epoch"));
                 process.setWorld(Bukkit.getWorld(rs.getString("world")));
                 process.setSourceName(rs.getString("player"));
-                process.setUuid(UUID.fromString(rs.getString("player_uuid")));
+                process.setUuid(SqlPlayerIdentificationHelper.uuidFromDbString(rs.getString("HEX(player_uuid)")));
                 process.setX(rs.getInt("x"));
                 process.setY(rs.getInt("y"));
                 process.setZ(rs.getInt("z"));

@@ -8,6 +8,7 @@ import me.botsko.prism.actionlibs.QueryResult;
 import me.botsko.prism.api.actions.MatchRule;
 import me.botsko.prism.api.commands.Flag;
 import me.botsko.prism.text.ReplaceableTextComponent;
+import me.botsko.prism.utils.MiscUtils;
 import me.botsko.prism.utils.block.Utilities;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
@@ -90,7 +91,7 @@ public class InspectorWand extends QueryWandBase {
                 final String blockname = Prism.getItems().getAlias(block.getType(), block.getBlockData());
                 Prism.messenger.sendMessage(player,
                         Prism.messenger.playerHeaderMsg(ReplaceableTextComponent.builder("inspector-wand-header")
-                                .replace("<block>",blockname)
+                                .replace("<blockname>",blockname)
                                 .replace("<x>",loc.getBlockX())
                                 .replace("<y>",loc.getBlockY())
                                 .replace("<z>",loc.getBlockY())
@@ -100,6 +101,7 @@ public class InspectorWand extends QueryWandBase {
                             Prism.messenger.playerHeaderMsg(Il8nHelper.formatMessage("lookup.result.header",
                                     results.getTotalResults(), 1, results.getTotalPages())));
                 }
+                int resultCount = results.getIndexOfFirstResult();
                 for (final me.botsko.prism.api
                         .actions.Handler a : results.getPaginatedActionResults()) {
                     final ActionMessage am = new ActionMessage(a);
@@ -107,9 +109,11 @@ public class InspectorWand extends QueryWandBase {
                             || plugin.getConfig().getBoolean("prism.messenger.always-show-extended")) {
                         am.showExtended();
                     }
-                    Prism.messenger.sendMessage(player,
-                            Prism.messenger.playerMsg(am.getMessage()));
+                    am.setResultIndex(resultCount);
+                    MiscUtils.sendClickableTpRecord(am, player);
+                    resultCount++;
                 }
+                MiscUtils.sendPageButtons(results, player);
             } else {
                 final String space_name = (block.getType().equals(Material.AIR) ? "space"
                         : block.getType().toString().replaceAll("_", " ").toLowerCase()

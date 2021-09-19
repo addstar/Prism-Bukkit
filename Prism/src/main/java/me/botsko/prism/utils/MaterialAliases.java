@@ -40,7 +40,7 @@ public class MaterialAliases {
         FileConfiguration items = null;
         InputStream defConfigStream = this.getClass().getResourceAsStream("/items.yml");
         if (defConfigStream != null) {
-            System.out.println("Elixr: Loaded items directory");
+            Prism.log("Elixr: Loaded items directory");
             items = YamlConfiguration.loadConfiguration(new InputStreamReader(defConfigStream));
         }
 
