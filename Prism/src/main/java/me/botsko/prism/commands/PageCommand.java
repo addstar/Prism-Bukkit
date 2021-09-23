@@ -5,12 +5,10 @@ import me.botsko.prism.Prism;
 import me.botsko.prism.actionlibs.ActionMessage;
 import me.botsko.prism.actionlibs.QueryResult;
 import me.botsko.prism.api.actions.Handler;
-import me.botsko.prism.api.commands.Flag;
 import me.botsko.prism.commandlibs.CallInfo;
 import me.botsko.prism.commandlibs.SubHandler;
 import me.botsko.prism.utils.MiscUtils;
 import me.botsko.prism.utils.TypeUtils;
-import net.kyori.adventure.identity.Identity;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
@@ -50,8 +48,7 @@ public class PageCommand implements SubHandler {
         final QueryResult results = plugin.cachedQueries.get(keyName);
 
         if (call.getArgs().length != 2) {
-            Prism.getAudiences().sender(call.getSender())
-                    .sendMessage(Identity.nil(),
+            Prism.messenger.sendMessage(call.getSender(),
                           Prism.messenger.playerError("Please specify a page number. Like /prism page 2"));
             return;
         }
@@ -115,8 +112,8 @@ public class PageCommand implements SubHandler {
         int resultCount = results.getIndexOfFirstResult();
         for (final Handler a : paginated) {
             final ActionMessage am = new ActionMessage(a);
-            if (results.getParameters().hasFlag(Flag.EXTENDED)
-                    || plugin.getConfig().getBoolean("prism.messenger.always-show-extended")) {
+            if (results.getParameters().hasFlag(Flags.EXTENDED)
+                    || plugin.config.parameterConfig.alwaysShowExtended) {
                 am.showExtended();
             }
             am.setResultIndex(resultCount);

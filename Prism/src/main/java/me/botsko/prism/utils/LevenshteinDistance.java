@@ -37,7 +37,7 @@ public class LevenshteinDistance {
         int currentTopActionDistance = Integer.MAX_VALUE;
         int distance;
         String act;
-        for (final String possibleAct : Prism.getActionRegistry().listAll()) {
+        for (final String possibleAct : Prism.getActionRegistryImpl().listAll()) {
             act = possibleAct.toLowerCase();
             distance = LevenshteinDistance.computeLevenshteinDistance(action, act);
             currentTopAction = (currentTopAction.isEmpty() ? act

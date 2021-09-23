@@ -4,6 +4,7 @@ import au.com.addstar.dripreporter.DripMeter;
 import com.google.common.collect.ImmutableMap;
 import me.botsko.prism.ApiHandler;
 import me.botsko.prism.Prism;
+import me.botsko.prism.PrismLogHandler;
 import me.botsko.prism.api.actions.Handler;
 import java.util.HashMap;
 import java.util.Map;
@@ -36,7 +37,7 @@ public class ActionMeter {
             addClass(SignAction.class);
             addClass(VehicleAction.class);
             meter.put("UnknownHandler", getMeter(Handler.class));
-            Prism.log("Action Meter metrics enabled. " + meter.size() + " metrics registered");
+            PrismLogHandler.log("Action Meter metrics enabled. " + meter.size() + " metrics registered");
             monitoring = true;
         }
     }
@@ -70,7 +71,7 @@ public class ActionMeter {
      * Setup the meter to record.
      */
     public static void setupActionMeter() {
-        // Initializes the static class
+        monitoring = Prism.getInstance().monitoring;
     }
 
     /**

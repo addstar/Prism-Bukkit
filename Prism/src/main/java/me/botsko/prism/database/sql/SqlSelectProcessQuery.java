@@ -1,8 +1,10 @@
 package me.botsko.prism.database.sql;
 
-import me.botsko.prism.Prism;
+import me.botsko.prism.PrismLogHandler;
+import me.botsko.prism.actionlibs.ActionRegistryImpl;
 import me.botsko.prism.actionlibs.QueryResult;
 import me.botsko.prism.actions.PrismProcessAction;
+import me.botsko.prism.api.actions.ActionType;
 import me.botsko.prism.database.PrismDataSource;
 import me.botsko.prism.database.SelectProcessActionQuery;
 import me.botsko.prism.measurement.TimeTaken;
@@ -19,7 +21,7 @@ import java.util.UUID;
  * Created by benjamincharlton on 6/04/2019.
  */
 public class SqlSelectProcessQuery extends SqlSelectQueryBuilder implements SelectProcessActionQuery {
-    private boolean getLastID;
+    protected boolean getLastID;
 
     /**
      * Constructor.
@@ -43,19 +45,18 @@ public class SqlSelectProcessQuery extends SqlSelectQueryBuilder implements Sele
             return "SELECT id FROM " + prefix + "data JOIN " + prefix + "players p ON p.player_id = " + prefix
                     + "data.player_id";
         }
-        String sql = "SELECT id, action, epoch, world, player, player_uuid, x, y, z, data FROM " + prefix
-                + "data d";
-        sql += " INNER JOIN " + prefix + "players p ON p.player_id = d.player_id ";
-        sql += " INNER JOIN " + prefix + "actions a ON a.action_id = d.action_id ";
-        sql += " INNER JOIN " + prefix + "worlds w ON w.world_id = d.world_id ";
-        sql += " LEFT JOIN " + prefix + "data_extra ex ON ex.data_id = d.id ";
-        return sql;
+        return "SELECT id, action, epoch, world, player, player_uuid, x, y, z, data FROM " + prefix
+                + "data d"
+                + " INNER JOIN " + prefix + "players p ON p.player_id = d.player_id "
+                + " INNER JOIN " + prefix + "actions a ON a.action_id = d.action_id "
+                + " INNER JOIN " + prefix + "worlds w ON w.world_id = d.world_id "
+                + " LEFT JOIN " + prefix + "data_extra ex ON ex.data_id = d.id ";
     }
 
     protected String where() {
         if (getLastID) {
             //bit hacky here we are using the id parameter which should generally refer to a player.
-            final int action_id = Prism.prismActions.get("prism-process");
+            final int action_id = ActionRegistryImpl.prismActions.get(ActionType.PRISM_PROCESS);
             String playerName = parameters.getKeyword();
             return "WHERE action_id = " + action_id + " AND p.player = " + playerName;
         }
@@ -103,19 +104,28 @@ public class SqlSelectProcessQuery extends SqlSelectQueryBuilder implements Sele
                 PreparedStatement s = conn.prepareStatement(query);
                 ResultSet rs = s.executeQuery()
         ) {
-            if (rs.next()) {
-                process = new PrismProcessAction();
-                // Set all shared values
-                process.setId(rs.getLong("id"));
-                process.setActionType(rs.getString("action"));
-                process.setUnixEpoch(rs.getLong("epoch"));
-                process.setWorld(Bukkit.getWorld(rs.getString("world")));
-                process.setSourceName(rs.getString("player"));
-                process.setUuid(UUID.fromString(rs.getString("player_uuid")));
-                process.setX(rs.getInt("x"));
-                process.setY(rs.getInt("y"));
-                process.setZ(rs.getInt("z"));
-                process.deserialize(rs.getString("data"));
+            try {
+                if (rs.next()) {
+                    process = new PrismProcessAction();
+                    // Set all shared values
+                    process.setId(rs.getLong("id"));
+                    String a = rs.getString("action");
+                    ActionType type = ActionType.getByName(a);
+                    if (type == null) {
+                        throw new IllegalArgumentException("Action for column does not exist: "+ a);
+                    }
+                    process.setActionType(type);
+                    process.setUnixEpoch(rs.getLong("epoch"));
+                    process.setWorld(Bukkit.getWorld(rs.getString("world")));
+                    process.setSourceName(rs.getString("player"));
+                    process.setUuid(UUID.fromString(rs.getString("player_uuid")));
+                    process.setX(rs.getInt("x"));
+                    process.setY(rs.getInt("y"));
+                    process.setZ(rs.getInt("z"));
+                    process.deserialize(rs.getString("data"));
+                }
+            }catch (IllegalArgumentException a){
+                PrismLogHandler.warn(a.getMessage(),a);
             }
         } catch (SQLException e) {
             dataSource.handleDataSourceException(e);

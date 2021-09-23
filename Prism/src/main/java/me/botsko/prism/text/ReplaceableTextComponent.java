@@ -3,6 +3,7 @@ package me.botsko.prism.text;
 
 import me.botsko.prism.Il8nHelper;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextReplacementConfig;
 import net.kyori.adventure.text.format.Style;
 import org.jetbrains.annotations.PropertyKey;
 
@@ -43,8 +44,10 @@ public class ReplaceableTextComponent {
      * @return ReplaceableTextComponent
      */
     public ReplaceableTextComponent replace(String key, String content, Style withStyle) {
-        this.component = component.replaceText(Pattern.compile(key),
-            builder -> Component.text().content(content).style(withStyle));
+        this.component = component
+                .replaceText(TextReplacementConfig.builder().match(Pattern.compile(key))
+                        .replacement(Component.text(content).style(withStyle))
+                        .build());
         return this;
     }
 
@@ -93,8 +96,7 @@ public class ReplaceableTextComponent {
      * @return ReplaceableTextComponent
      */
     public ReplaceableTextComponent replaceFirst(String key, Object content) {
-        replaceFirst(key, String.valueOf(content));
-        return this;
+        return replaceFirst(key, String.valueOf(content));
     }
 
     /**
@@ -105,8 +107,9 @@ public class ReplaceableTextComponent {
      * @return ReplaceableTextComponent
      */
     public ReplaceableTextComponent replaceFirst(String key, String content) {
-        this.component = component.replaceFirstText(Pattern.compile(key),
-            builder -> Component.text().content(content));
+        this.component = component.replaceText(TextReplacementConfig.builder().match(Pattern.compile(key))
+                .replacement(Component.text(content)).once().build()
+        );
         return this;
     }
 

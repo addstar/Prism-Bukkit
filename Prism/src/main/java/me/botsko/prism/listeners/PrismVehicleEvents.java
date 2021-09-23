@@ -3,6 +3,7 @@ package me.botsko.prism.listeners;
 import me.botsko.prism.Prism;
 import me.botsko.prism.actionlibs.ActionFactory;
 import me.botsko.prism.actionlibs.RecordingQueue;
+import me.botsko.prism.api.actions.ActionType;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
@@ -55,10 +56,10 @@ public class PrismVehicleEvents implements Listener {
         final OfflinePlayer player = uuid != null ? Bukkit.getOfflinePlayer(uuid) : null;
         if (player != null) {
             // TODO: name ref
-            if (!Prism.getIgnore().event("vehicle-place", loc.getWorld(), player.getName())) {
+            if (!Prism.getIgnore().event(ActionType.VEHICLE_PLACE, loc.getWorld(), player.getUniqueId())) {
                 return;
             }
-            RecordingQueue.addToQueue(ActionFactory.createVehicle("vehicle-place", vehicle, player));
+            RecordingQueue.addToQueue(ActionFactory.createVehicle(ActionType.VEHICLE_PLACE, vehicle, player));
         }
     }
 
@@ -74,14 +75,14 @@ public class PrismVehicleEvents implements Listener {
         final Entity attacker = event.getAttacker();
         // Was it broken by an attack
         if (attacker != null) {
-            handlePlayerAction(attacker, vehicle, "vehicle-break");
+            handlePlayerAction(attacker, vehicle, ActionType.VEHICLE_BREAK);
         } else {
 
             // Otherwise its driver was reckless
             final List<Entity> passengers = vehicle.getPassengers();
             if (!passengers.isEmpty()) {
                 Entity passenger = passengers.get(0);
-                handlePlayerAction(passenger, vehicle, "vehicle-break");
+                handlePlayerAction(passenger, vehicle, ActionType.VEHICLE_BREAK);
             }
         }
     }
@@ -95,7 +96,7 @@ public class PrismVehicleEvents implements Listener {
     public void onVehicleEnter(final VehicleEnterEvent event) {
         final Vehicle vehicle = event.getVehicle();
         final Entity entity = event.getEntered();
-        handlePlayerAction(entity, vehicle, "vehicle-enter");
+        handlePlayerAction(entity, vehicle, ActionType.VEHICLE_ENTER);
     }
 
     /**
@@ -108,14 +109,14 @@ public class PrismVehicleEvents implements Listener {
 
         final Vehicle vehicle = event.getVehicle();
         final Entity entity = event.getExited();
-        handlePlayerAction(entity, vehicle, "vehicle-exit", "vehicle-enter");
+        handlePlayerAction(entity, vehicle, ActionType.VEHICLE_EXIT, ActionType.VEHICLE_ENTER);
     }
 
-    private void handlePlayerAction(Entity entity, Vehicle vehicle, String action) {
+    private void handlePlayerAction(Entity entity, Vehicle vehicle, ActionType action) {
         handlePlayerAction(entity, vehicle, action, action);
     }
 
-    private void handlePlayerAction(Entity entity, Vehicle vehicle, String action, String customCheck) {
+    private void handlePlayerAction(Entity entity, Vehicle vehicle, ActionType action, ActionType customCheck) {
         if (entity instanceof Player) {
             if (!Prism.getIgnore().event(customCheck, ((Player) entity))) {
                 return;

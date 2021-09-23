@@ -5,6 +5,7 @@ import me.botsko.prism.actionlibs.QueryParameters;
 import me.botsko.prism.api.actions.Handler;
 import org.bukkit.entity.Player;
 
+import java.util.Collection;
 import java.util.List;
 
 public class Undo extends Preview {
@@ -14,7 +15,7 @@ public class Undo extends Preview {
      *
      * @param plugin Prism
      */
-    public Undo(Prism plugin, Player player, List<Handler> results, QueryParameters parameters,
+    public Undo(Prism plugin, Player player, Collection<Handler> results, QueryParameters parameters,
                 ApplierCallback callback) {
         super(plugin, player, results, parameters, callback);
     }

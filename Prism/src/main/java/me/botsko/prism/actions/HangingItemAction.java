@@ -1,10 +1,11 @@
 package me.botsko.prism.actions;
 
-import me.botsko.prism.Prism;
+import me.botsko.prism.PrismLogHandler;
 import me.botsko.prism.api.ChangeResult;
 import me.botsko.prism.api.ChangeResultType;
 import me.botsko.prism.api.PrismParameters;
 import me.botsko.prism.appliers.ChangeResultImpl;
+import me.botsko.prism.serializers.SerializationHelper;
 import me.botsko.prism.utils.block.Utilities;
 import org.bukkit.Art;
 import org.bukkit.Location;
@@ -43,13 +44,13 @@ public class HangingItemAction extends GenericAction {
 
     @Override
     public String serialize() {
-        return gson().toJson(actionData);
+        return SerializationHelper.gson().toJson(actionData);
     }
 
     @Override
     public void deserialize(String data) {
         if (data != null && data.startsWith("{")) {
-            actionData = gson().fromJson(data, HangingItemActionData.class);
+            actionData = SerializationHelper.gson().fromJson(data, HangingItemActionData.class);
         }
     }
 
@@ -105,7 +106,7 @@ public class HangingItemAction extends GenericAction {
      */
     private ChangeResult hangItem(Player player, PrismParameters parameters, boolean isPreview) {
         if (actionData == null) {
-            Prism.debug(parameters.getProcessType() + "Skipped - Hanging action data was null");
+            PrismLogHandler.debug(parameters.getProcessType() + "Skipped - Hanging action data was null");
             return new ChangeResultImpl(ChangeResultType.SKIPPED, null);
         }
 
@@ -116,7 +117,7 @@ public class HangingItemAction extends GenericAction {
 
         // Ensure there's a block at this location that accepts an attachment
         if (Utilities.materialMeansBlockDetachment(loc.getBlock().getType())) {
-            Prism.debug(parameters.getProcessType() + "Hanging Skipped - block would detach: "
+            PrismLogHandler.debug(parameters.getProcessType() + "Hanging Skipped - block would detach: "
                     + loc.getBlock().getType());
             return new ChangeResultImpl(ChangeResultType.SKIPPED, null);
         }

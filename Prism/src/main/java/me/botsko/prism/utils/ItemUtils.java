@@ -1,6 +1,6 @@
 package me.botsko.prism.utils;
 
-import me.botsko.prism.Prism;
+import me.botsko.prism.PrismLogHandler;
 import me.botsko.prism.api.objects.MaterialState;
 import org.bukkit.Bukkit;
 import org.bukkit.FireworkEffect;
@@ -63,8 +63,7 @@ public class ItemUtils {
     public static int getItemDamage(ItemStack stack) {
         ItemMeta meta = stack.getItemMeta();
 
-        if (meta instanceof Damageable) {
-            Damageable d = (Damageable) meta;
+        if (meta instanceof Damageable d) {
 
             return d.getDamage();
         }
@@ -92,7 +91,7 @@ public class ItemUtils {
 
                         return stack;
                     } catch (NumberFormatException e) {
-                        Prism.debug(" Item could not have damage parsed. Data:" + smallString + " Error:"
+                        PrismLogHandler.debug(" Item could not have damage parsed. Data:" + smallString + " Error:"
                               + e.getMessage());
                     }
                 }
@@ -159,12 +158,10 @@ public class ItemUtils {
         }
 
         // Coloring
-        if (metaA instanceof LeatherArmorMeta) {
-            if (!(metaB instanceof LeatherArmorMeta)) {
+        if (metaA instanceof LeatherArmorMeta colorA) {
+            if (!(metaB instanceof LeatherArmorMeta colorB)) {
                 return false;
             }
-            LeatherArmorMeta colorA = (LeatherArmorMeta) metaA;
-            LeatherArmorMeta colorB = (LeatherArmorMeta) metaB;
             if (!colorA.getColor().equals(colorB.getColor())) {
                 return false;
             }
@@ -187,13 +184,10 @@ public class ItemUtils {
         }
 
         // Books
-        if (metaA instanceof BookMeta) {
-            if (!(metaB instanceof BookMeta)) {
+        if (metaA instanceof BookMeta bookA) {
+            if (!(metaB instanceof BookMeta bookB)) {
                 return false;
             }
-
-            BookMeta bookA = (BookMeta) metaA;
-            BookMeta bookB = (BookMeta) metaB;
 
             // Author
             if (bookA.getAuthor() != null) {
@@ -222,14 +216,11 @@ public class ItemUtils {
         }
 
         // Enchanted books
-        if (metaA instanceof EnchantmentStorageMeta) {
+        if (metaA instanceof EnchantmentStorageMeta enchA) {
 
-            if (!(metaB instanceof EnchantmentStorageMeta)) {
+            if (!(metaB instanceof EnchantmentStorageMeta enchB)) {
                 return false;
             }
-
-            EnchantmentStorageMeta enchA = (EnchantmentStorageMeta) metaA;
-            EnchantmentStorageMeta enchB = (EnchantmentStorageMeta) metaB;
 
             if (enchA.hasStoredEnchants() != enchB.hasStoredEnchants()) {
                 return false;
@@ -242,13 +233,10 @@ public class ItemUtils {
         }
 
         // Skulls
-        if (metaA instanceof SkullMeta) {
-            if (!(metaB instanceof SkullMeta)) {
+        if (metaA instanceof SkullMeta skullA) {
+            if (!(metaB instanceof SkullMeta skullB)) {
                 return false;
             }
-
-            SkullMeta skullA = (SkullMeta) metaA;
-            SkullMeta skullB = (SkullMeta) metaB;
 
             if (skullA.hasOwner() != skullB.hasOwner()) {
                 return false;
@@ -260,13 +248,10 @@ public class ItemUtils {
         }
 
         // Potions
-        if (metaA instanceof PotionMeta) {
-            if (!(metaB instanceof PotionMeta)) {
+        if (metaA instanceof PotionMeta potA) {
+            if (!(metaB instanceof PotionMeta potB)) {
                 return false;
             }
-
-            PotionMeta potA = (PotionMeta) metaA;
-            PotionMeta potB = (PotionMeta) metaB;
 
             for (int c = 0; c < potA.getCustomEffects().size(); c++) {
                 PotionEffect e = potA.getCustomEffects().get(c);
@@ -277,13 +262,10 @@ public class ItemUtils {
         }
 
         // Fireworks
-        if (metaA instanceof FireworkMeta) {
-            if (!(metaB instanceof FireworkMeta)) {
+        if (metaA instanceof FireworkMeta fwA) {
+            if (!(metaB instanceof FireworkMeta fwB)) {
                 return false;
             }
-
-            FireworkMeta fwA = (FireworkMeta) metaA;
-            FireworkMeta fwB = (FireworkMeta) metaB;
 
             if (fwA.getPower() != fwB.getPower()) {
                 return false;
@@ -297,13 +279,10 @@ public class ItemUtils {
         }
 
         // Firework Effects
-        if (metaA instanceof FireworkEffectMeta) {
-            if (!(metaB instanceof FireworkEffectMeta)) {
+        if (metaA instanceof FireworkEffectMeta fwA) {
+            if (!(metaB instanceof FireworkEffectMeta fwB)) {
                 return false;
             }
-
-            FireworkEffectMeta fwA = (FireworkEffectMeta) metaA;
-            FireworkEffectMeta fwB = (FireworkEffectMeta) metaB;
 
             FireworkEffect effectA = fwA.getEffect();
             FireworkEffect effectB = fwB.getEffect();
@@ -443,23 +422,19 @@ public class ItemUtils {
         }
 
         // Leather Coloring
-        if (meta instanceof LeatherArmorMeta) {
-            LeatherArmorMeta lam = (LeatherArmorMeta) meta;
+        if (meta instanceof LeatherArmorMeta lam) {
             if (lam.getColor() != Bukkit.getItemFactory().getDefaultLeatherColor()) {
                 itemName.append(" dyed");
             }
-        } else if (meta instanceof SkullMeta) {
-            SkullMeta skull = (SkullMeta) meta;
+        } else if (meta instanceof SkullMeta skull) {
             if (skull.hasOwner()) {
                 itemName.append(Objects.requireNonNull(skull.getOwningPlayer()).getName()).append("'s ");
             }
-        } else if (meta instanceof BookMeta) {
-            BookMeta book = (BookMeta) meta;
+        } else if (meta instanceof BookMeta book) {
             itemName.append(" '").append(book.getTitle()).append("' by ").append(book.getAuthor());
         }
 
-        if (meta instanceof EnchantmentStorageMeta) {
-            EnchantmentStorageMeta bookEnchantments = (EnchantmentStorageMeta) meta;
+        if (meta instanceof EnchantmentStorageMeta bookEnchantments) {
             if (bookEnchantments.hasStoredEnchants()) {
                 Map<Enchantment, Integer> enchs = bookEnchantments.getStoredEnchants();
                 applyEnchantments(enchs, itemName);
@@ -471,8 +446,7 @@ public class ItemUtils {
         applyEnchantments(enchs, itemName);
 
         // Fireworks
-        if (meta instanceof FireworkEffectMeta) {
-            FireworkEffectMeta fireworkMeta = (FireworkEffectMeta) meta;
+        if (meta instanceof FireworkEffectMeta fireworkMeta) {
             if (fireworkMeta.hasEffect()) {
                 FireworkEffect effect = fireworkMeta.getEffect();
                 if (effect != null) {

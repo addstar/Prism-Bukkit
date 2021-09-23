@@ -1,8 +1,10 @@
 package me.botsko.prism.parameters;
 
 import me.botsko.prism.Prism;
+import me.botsko.prism.PrismLogHandler;
 import me.botsko.prism.actionlibs.QueryParameters;
 import me.botsko.prism.api.actions.PrismProcessType;
+import me.botsko.prism.config.PrismConfig;
 import me.botsko.prism.utils.DateUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
@@ -49,15 +51,15 @@ public class SinceParameter extends SimplePrismParameterHandler {
 
         if (!query.getFoundArgs().contains("before") && !query.getFoundArgs().contains("since")) {
 
-            final FileConfiguration config = Bukkit.getPluginManager().getPlugin("Prism").getConfig();
+            final String defaultTimeSince = Prism.getInstance().config.parameterConfig.defaultTimeSince;
 
-            Long date = DateUtil.translateTimeStringToDate(config.getString("prism.queries.default-time-since"));
+            Long date = DateUtil.translateTimeStringToDate(defaultTimeSince);
             if (date <= 0L) {
-                Prism.log("Error - date range configuration for prism.time-since is not valid");
+                PrismLogHandler.log("Error - date range configuration for prism.time-since is not valid");
                 date = DateUtil.translateTimeStringToDate("3d");
             }
             query.setSinceTime(date);
-            query.addDefaultUsed("t:" + config.getString("prism.queries.default-time-since"));
+            query.addDefaultUsed("t:" + defaultTimeSince);
         }
     }
 }

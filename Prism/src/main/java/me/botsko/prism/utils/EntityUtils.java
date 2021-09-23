@@ -10,6 +10,7 @@ import org.bukkit.entity.ExperienceOrb;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.List;
@@ -24,7 +25,7 @@ public class EntityUtils {
      * @param uuidOrName String
      * @return OfflinePlayer
      */
-    public static OfflinePlayer offlineOf(String uuidOrName) {
+    public @Nullable static OfflinePlayer offlineOf(String uuidOrName) {
         if (uuidOrName != null) {
             OfflinePlayer result;
             try {

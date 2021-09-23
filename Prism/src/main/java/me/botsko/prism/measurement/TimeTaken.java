@@ -1,6 +1,7 @@
 package me.botsko.prism.measurement;
 
 import me.botsko.prism.Prism;
+import me.botsko.prism.PrismLogHandler;
 
 import java.util.Calendar;
 import java.util.Map.Entry;
@@ -34,7 +35,7 @@ public class TimeTaken {
      * @param eventname String
      */
     public void recordTimedEvent(String eventname) {
-        if (!plugin.getConfig().getBoolean("prism.debug")) {
+        if (!plugin.config.debug) {
             return;
         }
         eventsTimed.put(getTimestamp(), eventname);
@@ -54,22 +55,22 @@ public class TimeTaken {
     public void printTimeRecord() {
 
         // record timed events to log
-        if (plugin.getConfig().getBoolean("prism.debug")) {
+        if (plugin.config.debug) {
             final TreeMap<Long, String> timers = plugin.eventTimer.getEventsTimedList();
             if (timers.size() > 0) {
                 long lastTime = 0;
                 long total = 0;
-                Prism.debug("-- Timer information for last action: --");
+                PrismLogHandler.debug("-- Timer information for last action: --");
                 for (final Entry<Long, String> entry : timers.entrySet()) {
                     long diff = 0;
                     if (lastTime > 0) {
                         diff = entry.getKey() - lastTime;
                         total += diff;
                     }
-                    Prism.debug(entry.getValue() + " " + diff + "ms");
+                    PrismLogHandler.debug(entry.getValue() + " " + diff + "ms");
                     lastTime = entry.getKey();
                 }
-                Prism.debug("Total time: " + total + "ms");
+                PrismLogHandler.debug("Total time: " + total + "ms");
             }
         }
         plugin.eventTimer.resetEventList();

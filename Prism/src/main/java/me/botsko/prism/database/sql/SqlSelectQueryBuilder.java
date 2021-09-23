@@ -2,9 +2,12 @@ package me.botsko.prism.database.sql;
 
 import com.google.gson.JsonSyntaxException;
 import me.botsko.prism.Prism;
-import me.botsko.prism.actionlibs.ActionTypeImpl;
+import me.botsko.prism.PrismLogHandler;
+import me.botsko.prism.actionlibs.ActionRegistryImpl;
 import me.botsko.prism.actionlibs.QueryResult;
 import me.botsko.prism.actionlibs.RecordingManager;
+import me.botsko.prism.api.actions.Action;
+import me.botsko.prism.api.actions.ActionType;
 import me.botsko.prism.api.actions.Handler;
 import me.botsko.prism.api.actions.MatchRule;
 import me.botsko.prism.api.actions.PrismProcessType;
@@ -38,7 +41,7 @@ import java.util.Set;
 
 public class SqlSelectQueryBuilder extends QueryBuilder implements SelectQuery {
 
-    public SqlSelectQueryBuilder(PrismDataSource dataSource) {
+    public SqlSelectQueryBuilder(PrismDataSource<?> dataSource) {
         super(dataSource);
     }
 
@@ -141,23 +144,29 @@ public class SqlSelectQueryBuilder extends QueryBuilder implements SelectQuery {
 
     private void worldCondition() {
         if (parameters.getWorld() != null) {
-            addCondition(
-                    String.format("world_id = ( SELECT w.world_id FROM " + prefix + "worlds w WHERE w.world = '%s')",
-                            parameters.getWorld()));
+            Integer worldId = Prism.prismWorlds.get(parameters.getWorld());
+            if (worldId != null && worldId != 0) {
+                addCondition("world_id = " + worldId);
+            } else {
+                addCondition(
+                        String.format("world_id = ( SELECT w.world_id FROM " + prefix
+                                        + "worlds w WHERE w.world = '%s')",
+                                parameters.getWorld()));
+            }
         }
     }
 
     private void actionCondition() {
         // Action type
-        final Map<String, MatchRule> action_types = parameters.getActionTypes();
+        final Map<ActionType, MatchRule> action_types = parameters.getActionTypes();
         boolean containsPrismProcessType = false;
 
         // Build IDs for prism process actions
         final Collection<String> prismActionIds = new ArrayList<>();
-        for (final Entry<String, Integer> entry : Prism.prismActions.entrySet()) {
-            if (entry.getKey().contains("prism")) {
+        for (final Entry<ActionType, Integer> entry : ActionRegistryImpl.prismActions.entrySet()) {
+            if (entry.getKey().name.contains("prism")) {
                 containsPrismProcessType = true;
-                prismActionIds.add("" + Prism.prismActions.get(entry.getKey()));
+                prismActionIds.add("" + ActionRegistryImpl.prismActions.get(entry.getKey()));
             }
         }
 
@@ -166,12 +175,18 @@ public class SqlSelectQueryBuilder extends QueryBuilder implements SelectQuery {
 
             final Collection<String> includeIds = new ArrayList<>();
             final Collection<String> excludeIds = new ArrayList<>();
-            for (final Entry<String, MatchRule> entry : action_types.entrySet()) {
+            for (final Entry<ActionType, MatchRule> entry : action_types.entrySet()) {
+                Integer id = ActionRegistryImpl.prismActions.get(entry.getKey());
+                if (id == null) {
+                    // null id means the action isn't registered.
+                    PrismLogHandler.debug("Ignoring" + entry.getKey() + " as Action not registered.");
+                    continue;
+                }
                 if (entry.getValue().equals(MatchRule.INCLUDE)) {
-                    includeIds.add("" + Prism.prismActions.get(entry.getKey()));
+                    includeIds.add("" + id);
                 }
                 if (entry.getValue().equals(MatchRule.EXCLUDE)) {
-                    excludeIds.add("" + Prism.prismActions.get(entry.getKey()));
+                    excludeIds.add("" + id);
                 }
             }
             // Include IDs
@@ -185,7 +200,9 @@ public class SqlSelectQueryBuilder extends QueryBuilder implements SelectQuery {
         } else {
             // exclude internal stuff
             if (!containsPrismProcessType && !parameters.getProcessType().equals(PrismProcessType.DELETE)) {
-                addCondition("action_id NOT IN (" + TypeUtils.join(prismActionIds, ",") + ")");
+                if (prismActionIds.size() > 0) {
+                    addCondition("action_id NOT IN (" + TypeUtils.join(prismActionIds, ",") + ")");
+                }
             }
         }
     }
@@ -453,7 +470,7 @@ public class SqlSelectQueryBuilder extends QueryBuilder implements SelectQuery {
             if (equation == null) {
                 addCondition(tableNameData + ".epoch >= " + (dateFrom / 1000) + "");
             } else {
-                addCondition(tableNameData + ".epoch " + equation + " '" + (dateFrom / 1000) + "'");
+                addCondition(tableNameData + ".epoch " + equation + " " + (dateFrom / 1000));
             }
         }
         return where;
@@ -466,9 +483,8 @@ public class SqlSelectQueryBuilder extends QueryBuilder implements SelectQuery {
         // Build conditions based off final args
         final String query = getQuery(parameters, shouldGroup);
         eventTimer.recordTimedEvent("query started");
-
         try (
-                Connection conn = Prism.getPrismDataSource().getDataSource().getConnection();
+                Connection conn = Prism.getInstance().getPrismDataSource().getDataSource().getConnection();
                 PreparedStatement s = conn.prepareStatement(query);
                 ResultSet rs = s.executeQuery()
         ) {
@@ -489,22 +505,22 @@ public class SqlSelectQueryBuilder extends QueryBuilder implements SelectQuery {
                 // and the cache data should always be available
                 int actionId = rs.getInt(3);
 
-                String actionName = "";
-                for (final Entry<String, Integer> entry : Prism.prismActions.entrySet()) {
+                ActionType actionName = null;
+                for (final Entry<ActionType, Integer> entry : ActionRegistryImpl.prismActions.entrySet()) {
                     if (entry.getValue() == actionId) {
                         actionName = entry.getKey();
                     }
                 }
-                if (actionName.isEmpty()) {
-                    Prism.warn("Record contains action ID that doesn't exist in cache: " + actionId
-                            + ", cacheSize=" + Prism.prismActions.size());
+                if (actionName == null) {
+                    PrismLogHandler.warn("Record contains action ID that doesn't exist in cache: " + actionId
+                            + ", cacheSize=" + ActionRegistryImpl.prismActions.size());
                     continue;
                 }
 
                 // Get the action handler
-                final ActionTypeImpl actionType = Prism.getActionRegistry().getAction(actionName);
+                final Action action = Prism.getActionRegistryImpl().getAction(actionName);
 
-                if (actionType == null) {
+                if (action == null) {
                     continue;
                 }
 
@@ -512,23 +528,22 @@ public class SqlSelectQueryBuilder extends QueryBuilder implements SelectQuery {
 
                 try {
 
-                    final Handler baseHandler = Prism.getHandlerRegistry().create(actionType.getHandler());
+                    final Handler baseHandler = Prism.getHandlerRegistry().create(action.getHandler());
 
                     // Convert world ID to name
                     // Performance-wise this is typically a lot faster than
                     // table joins
                     rowId = rs.getLong(1);
                     // Set all shared values
-                    baseHandler.setActionType(actionType);
+                    baseHandler.setAction(action);
                     baseHandler.setId(rowId);
                     baseHandler.setUnixEpoch(rs.getLong(2));
 
                     String worldName = worldsInverse.getOrDefault(rs.getInt(5), "");
-                    baseHandler.setWorld(Bukkit.getWorld(worldName));
+                    baseHandler.setWorld(Bukkit.getWorld(worldName));//todo Async BukkitAPI?
                     baseHandler.setX(rs.getInt(6));
                     baseHandler.setY(rs.getInt(7));
                     baseHandler.setZ(rs.getInt(8));
-
                     int blockId = rs.getInt(9);
                     int blockSubId = rs.getInt(10);
 
@@ -559,11 +574,12 @@ public class SqlSelectQueryBuilder extends QueryBuilder implements SelectQuery {
                             BlockData newData;
 
                             try {
+                                item.getType().createBlockData();
                                 newData = Bukkit.createBlockData(item.getType());
                             } catch (IllegalArgumentException e) {
                                 // This exception occurs, for example, with "ItemStack{DIAMOND_LEGGINGS x 1}"
-                                Prism.debug("IllegalArgumentException for record #" + rowId
-                                        + " calling createBlockData for " + item.toString());
+                                PrismLogHandler.debug("IllegalArgumentException for record #" + rowId
+                                        + " calling createBlockData for " + item);
                                 newData = null;
                             }
 
@@ -608,14 +624,14 @@ public class SqlSelectQueryBuilder extends QueryBuilder implements SelectQuery {
                             }
 
                             if (blockId > 0) {
-                                Prism.warn("Unable to convert record #" + rowId + " to material: "
+                                PrismLogHandler.warn("Unable to convert record #" + rowId + " to material: "
                                         + "block_id=" + blockId + ", block_subid=" + blockSubId + itemMetadataDesc);
                             } else if (oldBlockId > 0) {
-                                Prism.warn("Unable to convert record #" + rowId + " to material: "
+                                PrismLogHandler.warn("Unable to convert record #" + rowId + " to material: "
                                         + "old_block_id=" + oldBlockId + ", old_block_subid="
                                         + oldBlockSubId + itemMetadataDesc);
                             } else {
-                                Prism.warn("Unable to convert record #" + rowId + " to material: "
+                                PrismLogHandler.warn("Unable to convert record #" + rowId + " to material: "
                                         + "block_id=0, old_block_id=0" + itemMetadataDesc);
                             }
                         }
@@ -626,10 +642,12 @@ public class SqlSelectQueryBuilder extends QueryBuilder implements SelectQuery {
                         baseHandler.deserialize(extraData);
                     } catch (JsonSyntaxException e) {
                         if (Prism.isDebug()) {
-                            Prism.warn("Deserialization Error: " + e.getLocalizedMessage(), e);
+                            PrismLogHandler.warn("Deserialization Error: " + e.getLocalizedMessage(), e);
                         }
+                    } catch (NullPointerException e) {
+                        //this should not happen log it out
+                        PrismLogHandler.warn("Deserialization Error  (NPE): Row" + rowId + " " + e.getLocalizedMessage(), e);
                     }
-
                     // player
                     baseHandler.setSourceName(rs.getString(4));
 
@@ -637,7 +655,7 @@ public class SqlSelectQueryBuilder extends QueryBuilder implements SelectQuery {
                     try {
                         // Calls UUID.fromString, must handle potential exceptions
                         OfflinePlayer offline = Bukkit.getOfflinePlayer(
-                                SqlPlayerIdentificationHelper.uuidFromDbString(rs.getString(14)));
+                                SqlPlayerIdentificationQuery.uuidFromDbString(rs.getString(14)));
 
                         // Fake player
                         if (offline.hasPlayedBefore()) {
@@ -657,21 +675,20 @@ public class SqlSelectQueryBuilder extends QueryBuilder implements SelectQuery {
                     actions.add(baseHandler);
 
                 } catch (final SQLException e) {
-                    Prism.warn("Ignoring data from record #" + rowId + " because it caused an error:", e);
+                    PrismLogHandler.warn("Ignoring data from record #" + rowId + " because it caused an error:", e);
                 }
             }
         } catch (NullPointerException e) {
             if (RecordingManager.failedDbConnectionCount == 0) {
-                Prism.log(
-                        "Prism database error. Connection missing. Leaving actions to log in queue.");
-                Prism.debug(e.getMessage());
+                PrismLogHandler.log("Prism database error. Connection missing. Leaving actions to log in queue.");
+                PrismLogHandler.debug(e.getMessage(),e);
             }
             RecordingManager.failedDbConnectionCount++;
 
             return new QueryResult(actions, parameters);
 
         } catch (SQLException e) {
-            Prism.getPrismDataSource().handleDataSourceException(e);
+            Prism.getInstance().getPrismDataSource().handleDataSourceException(e);
         }
         return new QueryResult(actions, parameters);
     }

@@ -1,13 +1,13 @@
 package me.botsko.prism.actions;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import me.botsko.prism.Prism;
-import me.botsko.prism.actionlibs.ActionTypeImpl;
+import me.botsko.prism.actionlibs.ActionImpl;
 import me.botsko.prism.api.ChangeResult;
 import me.botsko.prism.api.PrismParameters;
+import me.botsko.prism.api.actions.Action;
 import me.botsko.prism.api.actions.ActionType;
 import me.botsko.prism.api.actions.Handler;
+import me.botsko.prism.config.PrismConfig;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -15,6 +15,7 @@ import org.bukkit.World;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.AnimalTamer;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.text.SimpleDateFormat;
@@ -23,9 +24,11 @@ import java.util.UUID;
 public abstract class GenericAction implements Handler {
     private static final SimpleDateFormat date = new SimpleDateFormat("yy/MM/dd");
     private static final SimpleDateFormat time = new SimpleDateFormat("hh:mm:ssa");
-    private static final Gson gson = new GsonBuilder().disableHtmlEscaping().create();
+
+    protected static final PrismConfig config = Prism.getInstance().config;
+
     private boolean canceled = false;
-    private ActionType type;
+    private Action type;
 
     private long id;
 
@@ -49,10 +52,7 @@ public abstract class GenericAction implements Handler {
 
     public GenericAction() {
         epoch = System.currentTimeMillis() / 1000;
-    }
 
-    protected static Gson gson() {
-        return GenericAction.gson;
     }
 
     @Override
@@ -167,7 +167,7 @@ public abstract class GenericAction implements Handler {
      * @see me.botsko.prism.actions.Handler#getType()
      */
     @Override
-    public ActionType getActionType() {
+    public Action getAction() {
         return type;
     }
 
@@ -175,20 +175,29 @@ public abstract class GenericAction implements Handler {
      * Set Action Type from a String.
      *
      * @param actionType String
+     * @deprecated use {@link this#setActionType(ActionType)}
      */
-    public void setActionType(String actionType) {
-        if (actionType != null) {
-            setActionType(Prism.getActionRegistry().getAction(actionType));
-        }
+    @Deprecated
+    public void setActionType(@NotNull String actionType) {
+        setAction(Prism.getActionRegistryImpl().getActionByName(actionType));
+    }
+
+    /**
+     * Set Action Type from a String.
+     *
+     * @param actionType String
+     */
+    public void setActionType(@NotNull ActionType actionType) {
+        setAction(Prism.getActionRegistryImpl().getAction(actionType));
     }
 
     /**
      * Set the Action Type.
      *
-     * @param type {@link ActionTypeImpl}
+     * @param type {@link ActionImpl}
      */
     @Override
-    public void setActionType(ActionType type) {
+    public void setAction(Action type) {
         this.type = type;
     }
 
@@ -349,6 +358,7 @@ public abstract class GenericAction implements Handler {
     }
 
     @Override
+    @Deprecated
     public short getDurability() {
         return 0;
     }

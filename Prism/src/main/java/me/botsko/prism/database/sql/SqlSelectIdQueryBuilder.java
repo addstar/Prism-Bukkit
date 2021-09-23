@@ -38,16 +38,16 @@ public class SqlSelectIdQueryBuilder extends SqlSelectQueryBuilder implements Se
 
     @Deprecated
     public void setMax() {
-        select = "SELECT max(id) FROM " + tableNameData + " ";
+        select = "SELECT MAX(id) FROM " + tableNameData + " ";
     }
 
     @Deprecated
     public void setMin() {
-        select = "SELECT min(id) FROM " + tableNameData + " ";
+        select = "SELECT MIN(id) FROM " + tableNameData + " ";
     }
 
     public void setMinMax() {
-        select = "SELECT min(id) as min, max(id) as max FROM " + tableNameData + " ";
+        select = "SELECT MIN(id), MAX(id) FROM " + tableNameData + " ";
         pair = true;
     }
 
@@ -57,7 +57,8 @@ public class SqlSelectIdQueryBuilder extends SqlSelectQueryBuilder implements Se
         long id2 = 0;
         try (
                 Connection connection = dataSource.getDataSource().getConnection();
-                PreparedStatement s = connection.prepareStatement(getQuery(parameters, shouldGroup));
+                PreparedStatement s = connection.prepareStatement(getQuery(parameters, shouldGroup),
+                        ResultSet.TYPE_SCROLL_INSENSITIVE,ResultSet.CONCUR_READ_ONLY);
                 ResultSet rs = s.executeQuery()
         ) {
             if (rs.next()) {

@@ -8,7 +8,9 @@ import com.sk89q.worldedit.bukkit.BukkitPlayer;
 import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.world.World;
 import me.botsko.prism.actionlibs.QueryParameters;
+import me.botsko.prism.api.PrismParameters;
 import me.botsko.prism.api.actions.PrismProcessType;
+import me.botsko.prism.config.PrismConfig;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.Vector;
@@ -18,12 +20,12 @@ public class WorldEditBridge {
     /**
      * Worldedit bridge.
      *
-     * @param plugin     Prism
+     * @param config     PrismConfig
      * @param player     Player
      * @param parameters {@link QueryParameters}
      * @return boolean.
      */
-    public static boolean getSelectedArea(Plugin plugin, Player player, QueryParameters parameters) {
+    public static boolean getSelectedArea(PrismConfig config, Player player, PrismParameters parameters) {
         // Get selected area
         Region region = null;
         try {
@@ -46,16 +48,15 @@ public class WorldEditBridge {
             final double hRadius = ((float)sel.getHeight() + 1) / 2;
 
             String procType = "applier";
+            int maxRadius = config.parameterConfig.maxApplierRadius;
             if (parameters.getProcessType().equals(PrismProcessType.LOOKUP)) {
                 procType = "lookup";
+                maxRadius = config.parameterConfig.maxLookupRadius;
             }
-
-            final int maxRadius = plugin.getConfig().getInt("prism.queries.max-" + procType + "-radius");
             if (maxRadius != 0 && (lRadius > maxRadius || wRadius > maxRadius || hRadius > maxRadius)
                     && !player.hasPermission("prism.override-max-" + procType + "-radius")) {
                 return false;
             } else {
-
                 parameters.setWorld(region.getWorld().getName());
                 parameters.setMinLocation(minLoc);
                 parameters.setMaxLocation(maxLoc);

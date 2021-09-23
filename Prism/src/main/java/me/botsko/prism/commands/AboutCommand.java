@@ -9,7 +9,6 @@ import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 
 import java.util.List;
-import java.util.regex.Pattern;
 
 public class AboutCommand implements SubHandler {
 
@@ -27,12 +26,13 @@ public class AboutCommand implements SubHandler {
         Prism.messenger.sendMessage(call.getSender(),
                 Prism.messenger.playerHeaderMsg(
                         Il8nHelper.getMessage("about-header")
-                                .replaceText(Pattern.compile("<author>"),
-                                    builder -> Component.text()
-                                             .content("The AddstarMC Network")
-                                             .color(NamedTextColor.GOLD))
-                                .replaceText(Pattern.compile("<version>"),
-                                    builder -> Component.text().content(plugin.getPrismVersion()))));
+                                .replaceText(builder -> builder.match("<author>").replacement(
+                                        Component.text("The AddstarMC Network")
+                                        .color(NamedTextColor.GOLD)))
+                                .replaceText(builder -> builder.match("<version>").replacement(
+                                        Component.text(plugin.getPrismVersion())))
+                )
+        );
         Prism.messenger.sendMessage(call.getSender(), Prism.messenger.playerSubduedHeaderMsg(
                 Component.text("Help: ")
                         .append(Component.text("/pr ?")

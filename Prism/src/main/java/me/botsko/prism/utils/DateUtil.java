@@ -10,7 +10,7 @@ public class DateUtil {
      * Translates a String to a timestamp showing ms since 0.
      * @return Long
      */
-    public static Long translateTimeStringToDate(String argValue) {
+    public static Long translateTimeStringToDate(CharSequence argValue) {
 
         long dateFrom = 0L;
 

@@ -4,6 +4,7 @@ import me.botsko.prism.api.ChangeResult;
 import me.botsko.prism.api.ChangeResultType;
 import me.botsko.prism.api.PrismParameters;
 import me.botsko.prism.appliers.ChangeResultImpl;
+import me.botsko.prism.serializers.SerializationHelper;
 import me.botsko.prism.utils.TypeUtils;
 import org.bukkit.Material;
 import org.bukkit.Tag;
@@ -47,7 +48,7 @@ public class SignAction extends GenericAction {
     @Override
     public void deserialize(String data) {
         if (data != null && !data.isEmpty()) {
-            actionData = gson().fromJson(data, SignChangeActionData.class);
+            actionData = SerializationHelper.gson().fromJson(data, SignChangeActionData.class);
         }
     }
 
@@ -58,7 +59,7 @@ public class SignAction extends GenericAction {
 
     @Override
     public String serialize() {
-        return gson().toJson(actionData);
+        return SerializationHelper.gson().toJson(actionData);
     }
 
     /**
@@ -134,11 +135,10 @@ public class SignAction extends GenericAction {
             }
 
             // Set the content
-            if (block.getState() instanceof org.bukkit.block.Sign) {
+            if (block.getState() instanceof final org.bukkit.block.Sign sign) {
 
                 // Set sign data
                 final String[] lines = getLines();
-                final org.bukkit.block.Sign sign = (org.bukkit.block.Sign) block.getState();
                 int i = 0;
                 if (lines != null && lines.length > 0) {
                     for (final String line : lines) {

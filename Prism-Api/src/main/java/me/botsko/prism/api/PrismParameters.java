@@ -81,6 +81,7 @@ public interface PrismParameters {
      * Add an entity to filter.
      *
      * @param entity the entity to set
+     * @param match {@link MatchRule}
      */
     void addEntity(String entity, MatchRule match);
 
@@ -154,6 +155,7 @@ public interface PrismParameters {
 
     /**
      * Set min loc.
+     * @param minLoc {@link Vector}
      */
     void setMinLocation(Vector minLoc);
 
@@ -166,6 +168,7 @@ public interface PrismParameters {
 
     /**
      * Set the max location vector.
+     * @param maxLoc {@link Vector}
      */
     void setMaxLocation(Vector maxLoc);
 
@@ -252,7 +255,7 @@ public interface PrismParameters {
      *
      * @return the Action Type
      */
-    Map<String, MatchRule> getActionTypes();
+    Map<ActionType, MatchRule> getActionTypes();
 
     /**
      * Get a set of actions to match with a match rules.
@@ -261,17 +264,18 @@ public interface PrismParameters {
      * @deprecated use getActionTypes()
      */
     @Deprecated
-    Map<String, MatchRule> getActionTypeNames();
+    Map<ActionType, MatchRule> getActionTypeNames();
 
     /**
      * Add action type to the filter with include rule.
      *
      * @param actionType the action_type to set
      */
-    void addActionType(String actionType);
+    void addActionType(ActionType actionType);
 
     /**
      * Remove an action Type.
+     * @param actionType {@link ActionType}
      */
     @SuppressWarnings("unused")
     void removeActionType(ActionType actionType);
@@ -346,7 +350,7 @@ public interface PrismParameters {
     Set<String> getFoundArgs();
 
     /**
-     * Set the Set of arguements.
+     * Set the Set of arguments.
      *
      * @param foundArgs the foundArgs to set
      */
@@ -368,8 +372,8 @@ public interface PrismParameters {
     void setParentId(long id);
 
     /**
-     * LOOKUP = Most recent actions first. ROLLBACK = Newest->Oldest so we can
-     * "rewind" the events RESTORE = Oldest->Newest so we can "replay" the events.
+     * LOOKUP = Most recent actions first. ROLLBACK = Newest to Oldest so we can
+     * "rewind" the events RESTORE = Oldest to Newest so we can "replay" the events.
      *
      * @return String
      */
@@ -377,6 +381,7 @@ public interface PrismParameters {
 
     /**
      * Add a flag to query.
+     * @param flag {@link Flag}
      */
     void addFlag(Flag flag);
 

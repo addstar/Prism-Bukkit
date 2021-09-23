@@ -2,9 +2,11 @@ package me.botsko.prism.utils;
 
 import com.google.common.base.CaseFormat;
 import me.botsko.prism.Prism;
+import me.botsko.prism.PrismLogHandler;
 import me.botsko.prism.actionlibs.ActionMessage;
-import me.botsko.prism.actionlibs.QueryResult;
+import me.botsko.prism.api.Result;
 import me.botsko.prism.api.actions.PrismProcessType;
+import me.botsko.prism.config.PrismConfig;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.event.ClickEvent;
@@ -14,16 +16,11 @@ import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.serializer.plain.PlainComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
-import org.kitteh.pastegg.Paste;
-import org.kitteh.pastegg.PasteBuilder;
-import org.kitteh.pastegg.PasteContent;
-import org.kitteh.pastegg.PasteFile;
-import org.kitteh.pastegg.Visibility;
+import org.kitteh.pastegg.*;
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -41,24 +38,24 @@ public class MiscUtils {
      * @return integer
      */
     public static int clampRadius(Player player, int desiredRadius, PrismProcessType processType,
-                                  ConfigurationSection config) {
+                                  PrismConfig config) {
 
         if (desiredRadius <= 0) {
-            return config.getInt("prism.near.default-radius");
+            return config.nearCommandConfig.defaultRadius;
         }
 
         // Safety checks for max lookup radius
-        int maxLookupRadius = config.getInt("prism.queries.max-lookup-radius");
-        if (maxLookupRadius <= 0) {
+        int maxLookupRadius = config.parameterConfig.maxLookupRadius;
+        if (maxLookupRadius <= 0.99) {
             maxLookupRadius = 5;
-            Prism.log("Max lookup radius may not be lower than one. Using safe inputue of five.");
+            PrismLogHandler.log("Max lookup radius may not be lower than one. Using safe input of five.");
         }
 
         // Safety checks for max applier radius
-        int maxApplierRadius = config.getInt("prism.queries.max-applier-radius");
-        if (maxApplierRadius <= 0) {
+        int maxApplierRadius = config.parameterConfig.maxApplierRadius;
+        if (maxApplierRadius <= 0.99) {
             maxApplierRadius = 5;
-            Prism.log("Max applier radius may not be lower than one. Using safe inputue of five.");
+            PrismLogHandler.log("Max applier radius may not be lower than one. Using safe input of five.");
         }
 
         // Does the radius exceed the configured max?
@@ -97,13 +94,39 @@ public class MiscUtils {
             try {
                 return (T) Enum.valueOf(fallback.getClass(), from.toUpperCase());
             } catch (IllegalArgumentException e) {
-                Prism.debug(e.getMessage());
+                PrismLogHandler.debug(e.getMessage());
             }
         }
         return fallback;
     }
 
+    /**
+     * Get the enum from the class.
+     * @param from String
+     * @param enumClass Class
+     * @param <T> Enum
+     * @return Enum
+     */
+    public static <T extends Enum<T>> T getEnum(String from, Class<T> enumClass) {
+        if (from != null) {
+            try {
+                return Enum.valueOf(enumClass, from.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                PrismLogHandler.debug(e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Nice name for a String.
+     * @param in String
+     * @return String
+     */
     public static String niceName(String in) {
+        if (in == null) {
+            return "";
+        }
         String[] parts = in.replace('_', ' ').trim().split("", 2);
         return parts[0].toUpperCase() + parts[1].toLowerCase();
     }
@@ -119,7 +142,7 @@ public class MiscUtils {
 
         final String prismWebUrl = "https://paste.gg/";
 
-        if (!Prism.getInstance().getConfig().getBoolean("prism.paste.enable")) {
+        if (!Prism.getInstance().config.pasteConfig.enabled) {
             Prism.messenger.sendMessage(sender,
                     Prism.messenger.playerError(
                             Component.text("Paste.gg support is currently disabled by config.")));
@@ -170,7 +193,7 @@ public class MiscUtils {
      * @param results Results
      * @param player  Player
      */
-    public static void sendPageButtons(QueryResult results, CommandSender player) {
+    public static void sendPageButtons(Result results, CommandSender player) {
         if (player instanceof Player) {
             if (results.getPage() == 1) {
                 if (results.getTotalPages() > 1) {
@@ -230,7 +253,8 @@ public class MiscUtils {
                 continue;
             }
             String processedCommand = command.replace("<alert>", cleanMessage);
-            Bukkit.getScheduler().runTask(Prism.getInstance(), () -> Bukkit.dispatchCommand(Bukkit.getConsoleSender(), processedCommand));
+            Bukkit.getScheduler().runTask(Prism.getInstance(),
+                    () -> Bukkit.dispatchCommand(Bukkit.getConsoleSender(), processedCommand));
         }
     }
 

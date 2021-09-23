@@ -39,9 +39,7 @@ public class DeathUtils {
         Entity killer = null;
 
         // If was damaged by an entity
-        if (entity.getLastDamageCause() instanceof EntityDamageByEntityEvent) {
-            EntityDamageByEntityEvent entityDamageByEntityEvent = (EntityDamageByEntityEvent) entity
-                    .getLastDamageCause();
+        if (entity.getLastDamageCause() instanceof EntityDamageByEntityEvent entityDamageByEntityEvent) {
             // Arrow?
             if (entityDamageByEntityEvent.getDamager() instanceof Arrow) {
                 Projectile arrow = (Arrow) entityDamageByEntityEvent.getDamager();
@@ -54,9 +52,7 @@ public class DeathUtils {
             }
         }
 
-        if (entity instanceof Player) {
-
-            Player player = (Player) entity;
+        if (entity instanceof Player player) {
 
             // Detect additional suicide. For example, when you potion
             // yourself with instant damage it doesn't show as suicide.
@@ -73,22 +69,16 @@ public class DeathUtils {
         }
 
         // Causes of death for either entities or players
-        if (damageCause.equals(DamageCause.ENTITY_ATTACK)) {
-            return "mob";
-        } else if (damageCause.equals(DamageCause.PROJECTILE)) {
-            return "skeleton";
-        } else if (damageCause.equals(DamageCause.ENTITY_EXPLOSION)) {
-            return "creeper";
-        } else if (damageCause.equals(DamageCause.CONTACT)) {
-            return "cactus";
-        } else if (damageCause.equals(DamageCause.BLOCK_EXPLOSION)) {
-            return "tnt";
-        } else if (damageCause.equals(DamageCause.FIRE) || damageCause.equals(DamageCause.FIRE_TICK)) {
-            return "fire";
-        } else if (damageCause.equals(DamageCause.MAGIC)) {
-            return "potion";
-        }
-        return damageCause.name().toLowerCase();
+        return switch (damageCause) {
+            case ENTITY_ATTACK -> "mob";
+            case PROJECTILE -> "skeleton";
+            case ENTITY_EXPLOSION -> "creeper";
+            case CONTACT -> "cactus";
+            case BLOCK_EXPLOSION -> "tnt";
+            case FIRE, FIRE_TICK -> "fire";
+            case MAGIC -> "potion";
+            default -> damageCause.name().toLowerCase();
+        };
     }
 
     /**
@@ -166,8 +156,7 @@ public class DeathUtils {
                 ((EntityDamageByEntityEvent) event.getEntity().getLastDamageCause());
         if (e != null) {
             Entity killer = e.getDamager();
-            if (killer instanceof Wolf) {
-                Wolf wolf = (Wolf) killer;
+            if (killer instanceof Wolf wolf) {
                 if (wolf.isTamed()) {
                     if (wolf.getOwner() instanceof Player) {
                         owner = ((Player) wolf.getOwner()).getName();

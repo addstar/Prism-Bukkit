@@ -2,6 +2,7 @@ package me.botsko.prism.commands;
 
 import me.botsko.prism.Il8nHelper;
 import me.botsko.prism.Prism;
+import me.botsko.prism.TaskManager;
 import me.botsko.prism.commandlibs.CallInfo;
 import me.botsko.prism.settings.Settings;
 import me.botsko.prism.text.ReplaceableTextComponent;
@@ -10,6 +11,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.Style;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 public class ResetmyCommand extends AbstractCommand {
 
@@ -34,11 +36,11 @@ public class ResetmyCommand extends AbstractCommand {
 
         if (setType != null && !setType.equalsIgnoreCase("wand")) {
             Prism.messenger.sendMessage(call.getPlayer(),
-                    Prism.messenger.playerError(Il8nHelper.getMessage("invalid-arguments")));
+                    Prism.messenger.playerError(Il8nHelper.formatMessage("invalid-arguments",setType)));
             return;
         }
 
-        if (!plugin.getConfig().getBoolean("prism.wands.allow-user-override")) {
+        if (!plugin.config.wandConfig.allowUserOverride) {
             Prism.messenger.sendMessage(call.getPlayer(),
                     Prism.messenger.playerError(Il8nHelper.getMessage("wand-personal-blocked")));
         }
@@ -58,11 +60,26 @@ public class ResetmyCommand extends AbstractCommand {
                                     Style.style(NamedTextColor.RED))
                             .build()));
         }
-
-        Settings.deleteSetting("wand.item", call.getPlayer());
-        Settings.deleteSetting("wand.mode", call.getPlayer());
-        Prism.messenger.sendMessage(call.getPlayer(),
-                Prism.messenger.playerHeaderMsg(Il8nHelper.getMessage("wand-reset")));
+        TaskManager manager = Prism.getInstance().getTaskManager();
+        try {
+            manager.addTask(Settings.deleteSettingAsync("wand.item", call.getPlayer()), new Consumer<Boolean>() {
+                @Override
+                public void accept(Boolean result) {
+                    if (result) {
+                        Prism.messenger.sendMessage(call.getPlayer(),
+                                Prism.messenger.playerHeaderMsg(Il8nHelper.getMessage("wand-item-reset")));
+                    }
+                }
+            }, false);
+            manager.addTask(Settings.deleteSettingAsync("wand.mode", call.getPlayer()), success -> {
+                if (success) {
+                    Prism.messenger.sendMessage(call.getPlayer(),
+                            Prism.messenger.playerHeaderMsg(Il8nHelper.getMessage("wand-mode-reset")));
+                }
+            },false);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

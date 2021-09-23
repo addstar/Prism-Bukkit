@@ -1,5 +1,7 @@
 package me.botsko.prism.commandlibs;
 
+import me.botsko.prism.Il8nHelper;
+import me.botsko.prism.Prism;
 import me.botsko.prism.utils.MiscUtils;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -24,7 +26,7 @@ public class Executor implements CommandExecutor, TabCompleter {
      * plugin watches for. SubCommand mode allows it to watch for commands that are
      * secondary to the primary command it's assigned to.
      */
-    public String mode;
+    public final String mode;
 
     private final String defaultSubCommand = "default";
 
@@ -67,7 +69,7 @@ public class Executor implements CommandExecutor, TabCompleter {
         if (sub == null) {
             sub = subCommands.get(defaultSubCommand);
             if (sub == null) {
-                sender.sendMessage("Invalid command");
+                Prism.messenger.sendMessage(sender, Il8nHelper.getMessage("invalid-command"));
                 return true;
             } else {
                 // The default is used, we must switch back to command mode
@@ -77,17 +79,17 @@ public class Executor implements CommandExecutor, TabCompleter {
 
         // Ensure they have permission
         if (player != null && !(sub.playerHasPermission(player))) {
-            sender.sendMessage("You do not have permission to use this command");
+            Prism.messenger.sendMessage(sender, Il8nHelper.getMessage("no-permission"));
             return true;
         } else if ((currentMode.equals("subcommand") && (args.length - 1) < sub.getMinArgs())
                 || (currentMode.equals("command") && (args.length) < sub.getMinArgs())) {
-            sender.sendMessage("You're missing arguments for this command");
+            Prism.messenger.sendMessage(sender, Il8nHelper.formatMessage("invalid-arguments", String.join(" ",args)));
             return true;
         }
         // Ensure command allows console
         if (!(sender instanceof Player)) {
             if (!sub.isConsoleAllowed()) {
-                sender.sendMessage("You must be in-game to use this command");
+                Prism.messenger.sendMessage(sender, Il8nHelper.getMessage("invalid-not-in-game"));
                 return true;
             }
         }

@@ -47,6 +47,7 @@ public class PrismDrainEvent extends Event {
 
     /**
      * Required by bukkit for proper event handling.
+     * @return {@link HandlerList}
      */
     @SuppressWarnings("unused")
     public static HandlerList getHandlerList() {

@@ -1,11 +1,13 @@
 package me.botsko.prism.monitors;
 
 import me.botsko.prism.Prism;
+import me.botsko.prism.PrismLogHandler;
 import me.botsko.prism.utils.MiscUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.plain.PlainComponentSerializer;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 
@@ -13,8 +15,8 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class UseMonitor {
-    protected final List<String> blocksToAlertOnPlace;
-    protected final List<String> blocksToAlertOnBreak;
+    protected final List<Material> blocksToAlertOnPlace;
+    protected final List<Material> blocksToAlertOnBreak;
     private final Prism plugin;
     private ConcurrentHashMap<String, Integer> countedEvents = new ConcurrentHashMap<>();
 
@@ -25,10 +27,8 @@ public class UseMonitor {
      */
     public UseMonitor(Prism plugin) {
         this.plugin = plugin;
-        blocksToAlertOnPlace = plugin.getConfig().getStringList("prism.alerts.uses.item-placement");
-        blocksToAlertOnPlace.replaceAll(String::toUpperCase);
-        blocksToAlertOnBreak = plugin.getConfig().getStringList("prism.alerts.uses.item-break");
-        blocksToAlertOnBreak.replaceAll(String::toUpperCase);
+        blocksToAlertOnPlace = plugin.config.alertConfig.uses.monitorItems;
+        blocksToAlertOnBreak = plugin.config.alertConfig.uses.breakItems;
         resetEventsQueue();
     }
 
@@ -57,14 +57,12 @@ public class UseMonitor {
                     .color(NamedTextColor.GRAY));
         }
         if (count <= 5) {
-            // Alert staff
-            plugin.alertPlayers(null, out, alertPerm);
-            // Log to console
-            if (plugin.getConfig().getBoolean("prism.alerts.uses.log-to-console")) {
-                Prism.log(PlainComponentSerializer.plain().serialize(out));
+            plugin.alertPlayers(null, out,alertPerm);
+            if (plugin.config.alertConfig.uses.logToConsole) {
+                PrismLogHandler.log(PlainComponentSerializer.plain().serialize(out));
             }
             // Log to commands
-            List<String> commands = plugin.getConfig().getStringList("prism.alerts.uses.log-commands");
+            List<String> commands = plugin.config.alertConfig.uses.logCommands;
             MiscUtils.dispatchAlert(msg, commands);
         }
     }
@@ -78,12 +76,12 @@ public class UseMonitor {
     private boolean checkFeatureShouldCancel(Player player) {
 
         // Ensure enabled
-        if (!plugin.getConfig().getBoolean("prism.alerts.uses.enabled")) {
+        if (!plugin.config.alertConfig.uses.enabled) {
             return true;
         }
 
         // Ignore players who would see the alerts
-        if (plugin.getConfig().getBoolean("prism.alerts.uses.ignore-staff")
+        if (plugin.config.alertConfig.uses.ignoreStaff
                 && player.hasPermission("prism.alerts")) {
             return true;
         }
@@ -107,10 +105,8 @@ public class UseMonitor {
         }
 
         final String playername = player.getName();
-        final String blockType = "" + block.getType();
-
         // Ensure we're tracking this block
-        if (blocksToAlertOnPlace.contains(blockType) || blocksToAlertOnPlace.contains(block.getType().name())) {
+        if (blocksToAlertOnPlace.contains(block.getType())) {
             final String alias = Prism.getItems().getAlias(block.getType(), block.getBlockData());
             incrementCount(playername, "placed " + alias, alertPerm);
         }
@@ -134,7 +130,7 @@ public class UseMonitor {
         final String blockType = "" + block.getType();
 
         // Ensure we're tracking this block
-        if (blocksToAlertOnBreak.contains(blockType) || blocksToAlertOnBreak.contains(block.getType().name())) {
+        if (blocksToAlertOnBreak.contains(block.getType())) {
             final String alias = Prism.getItems().getAlias(block.getType(), block.getBlockData());
             incrementCount(playername, "broke " + alias, alertPerm);
         }

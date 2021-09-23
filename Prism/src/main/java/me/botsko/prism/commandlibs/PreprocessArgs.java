@@ -2,12 +2,14 @@ package me.botsko.prism.commandlibs;
 
 import me.botsko.prism.Prism;
 import me.botsko.prism.actionlibs.QueryParameters;
+import me.botsko.prism.api.PrismParameters;
 import me.botsko.prism.api.actions.MatchRule;
 import me.botsko.prism.api.actions.PrismProcessType;
+import me.botsko.prism.config.PrismConfig;
 import me.botsko.prism.parameters.PrismParameterHandler;
+import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -20,14 +22,14 @@ import java.util.Set;
 
 public class PreprocessArgs {
 
-    public static QueryParameters process(Plugin plugin, CommandSender sender, String[] args,
+    public static QueryParameters process(PrismConfig config, CommandSender sender, String[] args,
                                           PrismProcessType processType, int startAt, boolean useDefaults) {
-        return process(plugin, sender, args, processType, startAt, useDefaults, false);
+        return process(config, sender, args, processType, startAt, useDefaults, false);
     }
 
     /**
      * Create a set of parameters.
-     * @param plugin plugin.
+     * @param config PrismConfig.
      * @param sender CommandSender
      * @param args arg list
      * @param processType {@link PrismProcessType}
@@ -36,7 +38,7 @@ public class PreprocessArgs {
      * @param optional bool
      * @return {@link QueryParameters}
      */
-    public static QueryParameters process(Plugin plugin, CommandSender sender, String[] args,
+    public static QueryParameters process(PrismConfig config, CommandSender sender, String[] args,
                                           PrismProcessType processType, int startAt, boolean useDefaults,
                                           boolean optional) {
 
@@ -52,8 +54,8 @@ public class PreprocessArgs {
 
         // Define pagination/process type
         if (parameters.getProcessType().equals(PrismProcessType.LOOKUP)) {
-            parameters.setLimit(plugin.getConfig().getInt("prism.queries.lookup-max-results"));
-            parameters.setPerPage(plugin.getConfig().getInt("prism.queries.default-results-per-page"));
+            parameters.setLimit(config.parameterConfig.lookupMaxResults);
+            parameters.setPerPage(config.parameterConfig.defaultResultsPerPage);
         }
 
         // Load registered parameters
@@ -74,7 +76,7 @@ public class PreprocessArgs {
             if (arg.isEmpty()) {
                 continue;
             }
-            if (ParseResult.NotFound == parseParam(plugin, sender, parameters, registeredParams,
+            if (ParseResult.NotFound == parseParam(sender, parameters, registeredParams,
                     foundArgsNames, foundArgsList, arg)) {
                 return null;
             }
@@ -87,7 +89,7 @@ public class PreprocessArgs {
                 Prism.messenger.sendMessage(sender, Prism.messenger
                         .playerError("You're missing valid parameters. Use /prism ? for assistance."));
             } else {
-                Prism.log("Missing valid parameters");
+                me.botsko.prism.PrismLogHandler.log("Missing valid parameters");
             }
             return null;
         }
@@ -114,7 +116,7 @@ public class PreprocessArgs {
                 if (sender != null) {
                     Prism.messenger.sendMessage(sender, Prism.messenger.playerError(e.getMessage()));
                 } else {
-                    Prism.log(e.getMessage());
+                    me.botsko.prism.PrismLogHandler.log(e.getMessage());
                 }
                 return null;
             }
@@ -129,7 +131,7 @@ public class PreprocessArgs {
         }
 
         // Player location
-        if (player != null && !plugin.getConfig().getBoolean("prism.queries.never-use-defaults")
+        if (player != null && !config.parameterConfig.neverUseDefaults
                 && parameters.getPlayerLocation() == null
                 && (parameters.getMaxLocation() == null || parameters.getMinLocation() == null)) {
             parameters.setMinMaxVectorsFromPlayerLocation(player.getLocation());
@@ -139,7 +141,6 @@ public class PreprocessArgs {
 
     /**
      * Parse a set of params.
-     * @param plugin Prism
      * @param sender CommandSender
      * @param parameters QueryParameters
      * @param registeredParams Map
@@ -148,7 +149,7 @@ public class PreprocessArgs {
      * @param arg String
      * @return ParseResult.
      */
-    private static ParseResult parseParam(Plugin plugin, CommandSender sender, QueryParameters parameters,
+    private static ParseResult parseParam(CommandSender sender, PrismParameters parameters,
                                           Map<String, PrismParameterHandler> registeredParams,
                                           Collection<String> foundArgsNames, Collection<MatchedParam> foundArgsList,
                                           String arg) {
@@ -176,7 +177,7 @@ public class PreprocessArgs {
             // can use the tab-complete
             // feature of minecraft. Using p: prevents it.
 
-            final Player autoFillPlayer = plugin.getServer().getPlayer(arg);
+            final Player autoFillPlayer = Bukkit.getServer().getPlayer(arg);
             if (autoFillPlayer != null) {
                 MatchRule match = MatchRule.INCLUDE;
                 if (arg.startsWith("!")) {
@@ -194,7 +195,7 @@ public class PreprocessArgs {
                             Prism.messenger.playerError("Unrecognized parameter '"
                                     + arg + "'. Use /prism ? for help."));
                 } else {
-                    Prism.log("Unrecognized parameter '" + arg + "'");
+                    me.botsko.prism.PrismLogHandler.log("Unrecognized parameter '" + arg + "'");
                 }
                 break;
             case NoPermission:
@@ -203,7 +204,7 @@ public class PreprocessArgs {
                             Prism.messenger.playerError("No permission for parameter '"
                                     + arg + "', skipped."));
                 } else {
-                    Prism.log("No permission for parameter '" + arg + "'");
+                    me.botsko.prism.PrismLogHandler.log("No permission for parameter '" + arg + "'");
                 }
                 break;
             default:

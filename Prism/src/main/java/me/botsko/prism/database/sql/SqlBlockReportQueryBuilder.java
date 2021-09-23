@@ -2,7 +2,9 @@ package me.botsko.prism.database.sql;
 
 import me.botsko.prism.Il8nHelper;
 import me.botsko.prism.Prism;
+import me.botsko.prism.PrismLogHandler;
 import me.botsko.prism.api.PrismParameters;
+import me.botsko.prism.api.actions.ActionType;
 import me.botsko.prism.api.objects.MaterialState;
 import me.botsko.prism.database.BlockReportQuery;
 import me.botsko.prism.database.PrismDataSource;
@@ -39,26 +41,34 @@ public class SqlBlockReportQueryBuilder extends SqlSelectQueryBuilder implements
 
         query += ";";
 
-        Prism.debug(query);
+        PrismLogHandler.debug(query);
         return query;
 
     }
 
+    @SuppressWarnings("StringConcatenationInsideStringBufferAppend")
     @Override
     protected String select() {
-        parameters.addActionType("block-place");
+        parameters.addActionType(ActionType.BLOCK_PLACE);
 
         // block-place query
         StringBuilder sql = new StringBuilder();
-        sql.append("SELECT block_id, SUM(placed) AS placed, SUM(broken) AS broken ")
-                .append("FROM ((").append("SELECT block_id, COUNT(id) AS placed, 0 AS broken ").append("FROM ")
-                .append(prefix).append("data ").append(where()).append(" ").append("GROUP BY block_id) ");
+        sql.append("SELECT block_id,"
+                + " SUM(placed) AS placed,"
+                + " SUM(broken) AS broken FROM (("
+                + "SELECT block_id,"
+                + " COUNT(id) AS placed,"
+                + " 0 AS broken FROM " + prefix + "data "
+                + where() + " GROUP BY block_id) ");
         conditions.clear();
         parameters.getActionTypes().clear();
-        parameters.addActionType("block-break");
-        sql.append("UNION ( " + "SELECT block_id, 0 AS placed, count(id) AS broken ").append("FROM ")
-                .append(prefix).append("data ").append(where()).append(" GROUP BY block_id)) ")
-                .append("AS PR_A ").append("GROUP BY block_id ORDER BY (SUM(placed) + SUM(broken)) DESC");
+        parameters.addActionType(ActionType.BLOCK_BREAK);
+        sql.append(" UNION ( SELECT block_id,"
+                + " 0 AS placed,"
+                + " count(id) AS broken FROM "
+                + prefix + "data " + where()
+                + " GROUP BY block_id)) AS PR_A "
+                + " GROUP BY block_id ORDER BY (SUM(placed) + SUM(broken)) DESC");
         return sql.toString();
 
     }
@@ -80,10 +90,14 @@ public class SqlBlockReportQueryBuilder extends SqlSelectQueryBuilder implements
                 ResultSet rs = s.executeQuery()
 
         ) {
+            final String pName = playerName;
             Prism.messenger.sendMessage(sender, Prism.messenger
                     .playerHeaderMsg(Il8nHelper.getMessage("report-block-changes")
-                            .replaceText("<player>",
-                                    Component.text(playerName).color(NamedTextColor.DARK_AQUA))));
+                            .replaceText(builder -> builder.match("<player")
+                                    .replacement(Component.text(pName).color(NamedTextColor.DARK_AQUA))
+                                    .once())
+                    )
+            );
             Prism.messenger.sendMessage(sender,
                     Prism.messenger.playerMsg(Component.text(TypeUtils.padStringRight("Block", colTextLen)
                             + TypeUtils.padStringRight("Placed", colIntLen)

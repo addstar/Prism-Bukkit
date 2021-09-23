@@ -1,31 +1,41 @@
 package me.botsko.prism.utils;
 
-import be.seeseemelk.mockbukkit.MockBukkit;
 import be.seeseemelk.mockbukkit.ServerMock;
+import me.botsko.prism.Prism;
+import me.botsko.prism.testhelpers.TestHelper;
 import me.botsko.prism.utils.block.Utilities;
 import org.bukkit.Material;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 /**
  * Created for use for the Add5tar MC Minecraft server
  * Created by benjamincharlton on 23/05/2020.
  */
-public class UtilitiesTest {
+class UtilitiesTest {
 
-    /**
-     * Required to avoid NPE.
-     */
-    @SuppressWarnings({"unused", "FieldCanBeLocal"})
-    private ServerMock server;
+    static boolean integrationTesting = false;
+    private static ServerMock server;
+    private static TestHelper helper;
 
-    @Before
-    public void setUp() {
-        server = MockBukkit.mock();
+    @BeforeAll
+    static void setUpAll() {
+        helper = new TestHelper();
+        server = helper.setup();
+        if (Prism.getInstance().getPrismDataSource().getDataSource() != null) {
+            integrationTesting = true;
+        }
     }
-    
+
+    @AfterAll
+    static void tearDownFinal() {
+        TestHelper.shutdownHelper(helper);
+    }
+
     @Test
     public void testAreBlockIdsSameCoreItem() {
         Material m1 = Material.DIRT;
@@ -34,6 +44,5 @@ public class UtilitiesTest {
         m1 = Material.GRASS_BLOCK;
         assertTrue(Utilities.areBlockIdsSameCoreItem(m1,m2));
     }
-
 
 }

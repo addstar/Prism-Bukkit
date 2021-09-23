@@ -1,5 +1,6 @@
 package me.botsko.prism.actions;
 
+import me.botsko.prism.serializers.SerializationHelper;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -55,13 +56,13 @@ public class EntityTravelAction extends GenericAction {
 
     @Override
     public String serialize() {
-        return gson().toJson(actionData);
+        return SerializationHelper.gson().toJson(actionData);
     }
 
     @Override
     public void deserialize(String data) {
         if (data != null && data.startsWith("{")) {
-            actionData = gson().fromJson(data, EntityTravelActionData.class);
+            actionData = SerializationHelper.gson().fromJson(data, EntityTravelActionData.class);
         }
     }
 

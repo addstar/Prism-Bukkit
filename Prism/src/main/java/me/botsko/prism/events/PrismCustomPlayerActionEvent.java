@@ -1,5 +1,6 @@
 package me.botsko.prism.events;
 
+import me.botsko.prism.api.actions.ActionType;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -11,22 +12,32 @@ public class PrismCustomPlayerActionEvent extends Event {
 
     private static final HandlerList handlers = new HandlerList();
     private final String pluginName;
-    private final String actionTypeName;
+    private final ActionType actionTypeName;
+    private String customTypeName = null;
     private final Player player;
     private final String message;
 
     /**
      * Constructor.
      * @param plugin Plugin
-     * @param actionTypeName String
+     * @param actionTypeName String - can either be custom or inbuilt.
      * @param player Player
      * @param message String
      */
     public PrismCustomPlayerActionEvent(Plugin plugin, String actionTypeName, Player player, String message) {
         this.pluginName = plugin.getName();
-        this.actionTypeName = actionTypeName;
+        ActionType type = ActionType.getByName(actionTypeName);
+        if (type == null) {
+            type = ActionType.CUSTOM_ACTION;
+            customTypeName = actionTypeName;
+        }
+        this.actionTypeName = type;
         this.player = player;
         this.message = message + ChatColor.GOLD + " [" + this.pluginName + "]" + ChatColor.DARK_AQUA;
+    }
+
+    public String getCustomTypeName() {
+        return customTypeName;
     }
 
     /**
@@ -41,7 +52,7 @@ public class PrismCustomPlayerActionEvent extends Event {
      * Get Action Name.
      * @return String
      */
-    public String getActionTypeName() {
+    public ActionType getActionTypeName() {
         return actionTypeName;
     }
 

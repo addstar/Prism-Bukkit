@@ -1,5 +1,6 @@
 package me.botsko.prism.utils;
 
+import org.bukkit.Keyed;
 import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
@@ -90,7 +91,7 @@ public class EnchantmentUtils {
      * @param level int
      * @return String
      */
-    public static String getClientSideEnchantmentName(Enchantment enchantment, int level) {
+    public static String getClientSideEnchantmentName(Keyed enchantment, int level) {
 
         String enchantName;
 
@@ -137,22 +138,12 @@ public class EnchantmentUtils {
             enchantName = enchantment.getKey().getKey().toLowerCase().replace("_", " ");
         }
         switch (level) {
-            case 2:
-                enchantName += " II";
-                break;
-            case 3:
-                enchantName += " III";
-                break;
-            case 4:
-                enchantName += " IV";
-                break;
-            case 5:
-                enchantName += " V";
-                break;
-            case 1:
-            default:
-                enchantName += " I";
-                break;
+            case 1 -> enchantName += " I";
+            case 2 -> enchantName += " II";
+            case 3 -> enchantName += " III";
+            case 4 -> enchantName += " IV";
+            case 5 -> enchantName += " V";
+            default -> enchantName += " " + level;
         }
         return enchantName;
 

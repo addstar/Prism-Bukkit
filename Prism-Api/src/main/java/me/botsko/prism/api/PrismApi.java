@@ -1,5 +1,7 @@
 package me.botsko.prism.api;
 
+import me.botsko.prism.api.actions.ActionRegistry;
+import me.botsko.prism.api.actions.Handler;
 import org.bukkit.command.CommandSender;
 
 import java.util.concurrent.Future;
@@ -26,5 +28,9 @@ public interface PrismApi {
      * @return Future - that will complete with a {@link Future} The future will contain a {@link Result}
      */
     Future<Result> performLookup(PrismParameters parameters, CommandSender sender);
+
+    ActionRegistry getActionRegistry();
+
+    void handleCustomAction(Handler handler);
 
 }

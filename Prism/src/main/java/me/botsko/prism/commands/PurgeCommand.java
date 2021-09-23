@@ -11,6 +11,7 @@ import org.bukkit.Bukkit;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 /**
  * Created by Narimm on 5/06/2017.
@@ -29,17 +30,18 @@ public class PurgeCommand implements SubHandler {
             Prism.messenger.sendMessage(call.getSender(),
                     Prism.messenger.playerHeaderMsg(Component.text("Prism")
                             .append(Component.text(" v" + plugin.getPrismVersion()).color(NamedTextColor.GRAY))));
+            ScheduledThreadPoolExecutor pool = plugin.getTaskManager().getSchedulePool();
             Prism.messenger.sendMessage(call.getSender(),
                   Prism.messenger.playerSubduedHeaderMsg(ReplaceableTextComponent.builder("purge-report")
-                    .replace("<taskCount>", plugin.getSchedulePool().getTaskCount())
-                    .replace("<purgesComplete>", plugin.getSchedulePool().getCompletedTaskCount())
-                    .replace("<poolString>", plugin.getSchedulePool().toString())
+                    .replace("<taskCount>", pool.getTaskCount())
+                    .replace("<purgesComplete>", pool.getCompletedTaskCount())
+                    .replace("<poolString>", pool.toString())
                     .build()));
         } else if (call.getArgs().length > 1) {
             if (Objects.equals(call.getArgs()[1], "execute")) {
                 Prism.messenger.sendMessage(call.getSender(),
                         Prism.messenger.playerHeaderMsg(Il8nHelper.getMessage("purge-execute")));
-                Bukkit.getScheduler().runTaskAsynchronously(plugin, plugin.getPurgeManager());
+                Bukkit.getScheduler().runTaskAsynchronously(plugin, plugin.getTaskManager().getPurgeManager());
             }
         } else {
             Prism.messenger.sendMessage(call.getSender(),Il8nHelper.getMessage("invalid-command"));

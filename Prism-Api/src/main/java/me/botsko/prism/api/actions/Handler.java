@@ -58,9 +58,9 @@ public interface Handler {
      * The ActionType.
      * @return ActionType
      */
-    ActionType getActionType();
+    Action getAction();
 
-    void setActionType(ActionType type);
+    void setAction(Action type);
 
     void setWorld(World world);
 

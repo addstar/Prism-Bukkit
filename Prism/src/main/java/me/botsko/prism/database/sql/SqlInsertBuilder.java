@@ -1,11 +1,12 @@
 package me.botsko.prism.database.sql;
 
 import me.botsko.prism.Prism;
+import me.botsko.prism.PrismLogHandler;
+import me.botsko.prism.actionlibs.ActionRegistryImpl;
 import me.botsko.prism.api.actions.Handler;
 import me.botsko.prism.database.InsertQuery;
 import me.botsko.prism.database.PrismDataSource;
 import me.botsko.prism.database.QueryBuilder;
-import me.botsko.prism.players.PlayerIdentification;
 import me.botsko.prism.players.PrismPlayer;
 import me.botsko.prism.utils.IntPair;
 import me.botsko.prism.utils.block.Utilities;
@@ -14,6 +15,7 @@ import org.bukkit.Location;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLDataException;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -23,40 +25,50 @@ import java.util.ArrayList;
  * Created by Narimm on 1/06/2019.
  */
 public class SqlInsertBuilder extends QueryBuilder implements InsertQuery {
-    final ArrayList<Handler> extraDataQueue = new ArrayList<>();
+    private final ArrayList<Handler> extraDataQueue = new ArrayList<>();
     private PreparedStatement batchStatement;
     private Connection batchConnection;
 
     /**
      * Create an insert builder.
+     *
      * @param dataSource Data source
      */
-    public SqlInsertBuilder(PrismDataSource dataSource) {
+    public SqlInsertBuilder(PrismDataSource<?> dataSource) {
         super(dataSource);
+    }
+
+    private int getWorldId(Handler a) {
+        String worldName = a.getLoc().getWorld().getName();
+        if (Prism.prismWorlds.containsKey(worldName)) {
+            return Prism.prismWorlds.get(worldName);
+        }
+        return 0;
+    }
+
+    private int getActionId(Handler a) {
+        if (ActionRegistryImpl.prismActions.containsKey(a.getAction().getActionType())) {
+            return ActionRegistryImpl.prismActions.get(a.getAction().getActionType());
+        }
+        return 0;
+    }
+
+    private int getPlayerId(Handler a) {
+        PrismPlayer prismPlayer = Prism.getInstance().getPlayerIdentifier()
+                .getPrismPlayerByNameFromCache(a.getSourceName());
+        return prismPlayer.getId();
     }
 
     /**
      * {@inheritDoc}
      */
-    @SuppressWarnings("DuplicatedCode")
     @Override
     public long insertActionIntoDatabase(Handler a) {
-        int worldId = 0;
-        long id = 0;
-        String worldName = a.getLoc().getWorld().getName();
-        if (Prism.prismWorlds.containsKey(worldName)) {
-            worldId = Prism.prismWorlds.get(worldName);
-        }
-        int actionId = 0;
-        if (Prism.prismActions.containsKey(a.getActionType().getName())) {
-            actionId = Prism.prismActions.get(a.getActionType().getName());
-        }
-
-        PrismPlayer prismPlayer = PlayerIdentification.getPrismPlayerByNameFromCache(a.getSourceName());
-        int playerId = prismPlayer.getId();
-
+        int worldId = getWorldId(a);
+        int actionId = getActionId(a);
+        int playerId = getPlayerId(a);
         if (worldId == 0 || actionId == 0 || playerId == 0) {
-            Prism.debug("Sql data error: Handler:" + a.toString());
+            PrismLogHandler.debug("Sql data error: Handler:" + a);
         }
         IntPair newIds = Prism.getItems().materialToIds(a.getMaterial(),
                 Utilities.dataString(a.getBlockData()));
@@ -64,33 +76,46 @@ public class SqlInsertBuilder extends QueryBuilder implements InsertQuery {
                 Utilities.dataString(a.getOldBlockData()));
 
         Location l = a.getLoc();
-
+        long id = 0;
         try (
-                Connection con = dataSource.getConnection();
-                PreparedStatement s = con.prepareStatement(getQuery(), Statement.RETURN_GENERATED_KEYS)
+                Connection con = dataSource.getConnection()
         ) {
-            applyToInsert(s, a, actionId, playerId, worldId, newIds, oldIds, l);
-            s.executeUpdate();
-            ResultSet generatedKeys = s.getGeneratedKeys();
-            if (generatedKeys.next()) {
-                id = generatedKeys.getLong(1);
-            }
-            if (a.hasExtraData()) {
-                String serialData = a.serialize();
-                if (serialData != null && !serialData.isEmpty()) {
-
-                    try (
-                            PreparedStatement s2 = con.prepareStatement(
-                                    "INSERT INTO `" + prefix + "data_extra` (data_id, data) VALUES (?, ?)",
-                                    Statement.RETURN_GENERATED_KEYS)) {
-                        s2.setLong(1, id);
-                        s2.setString(2, serialData);
-                        s2.executeUpdate();
+            try (
+                    PreparedStatement s = con.prepareStatement(getQuery(), Statement.RETURN_GENERATED_KEYS)
+            ) {
+                applyToInsert(s, a, actionId, playerId, worldId, newIds, oldIds, l);
+                s.executeUpdate();
+                ResultSet generatedKeys = s.getGeneratedKeys();
+                if (generatedKeys.next()) {
+                    id = generatedKeys.getLong(1);
+                }
+                if (a.hasExtraData()) {
+                    String serialData = a.serialize();
+                    if (serialData != null && !serialData.isEmpty()) {
+                        if (serialData.length() > 32000) {
+                            PrismLogHandler.debug("Large SerialData Details: Loc: "
+                                    + a.getLoc().toString()
+                                    + " Action:" + a.getAction().getActionType().name
+                                    + " Block:" + a.getMaterial().name());
+                            PrismLogHandler.debug("    SerialData: " + serialData);
+                            throw new SQLDataException("Extra Data value to large for database (max 32000) "
+                                    + serialData.length());
+                        }
+                        try (
+                                PreparedStatement s2 = con.prepareStatement(getExtraDataQuery(),
+                                        Statement.RETURN_GENERATED_KEYS)
+                        ) {
+                            s2.setLong(1, id);
+                            s2.setString(2, serialData);
+                            s2.executeUpdate();
+                        }
                     }
                 }
+            } catch (SQLException e) {
+                PrismLogHandler.warn(e.getMessage(), e);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            dataSource.handleDataSourceException(e);
         }
         return id;
     }
@@ -105,25 +130,17 @@ public class SqlInsertBuilder extends QueryBuilder implements InsertQuery {
         batchStatement = batchConnection.prepareStatement(getQuery(), Statement.RETURN_GENERATED_KEYS);
     }
 
-    @SuppressWarnings("DuplicatedCode")
     @Override
     public boolean addInsertionToBatch(Handler a) throws SQLException {
         if (batchStatement == null) {
             return false;
         }
-        int worldId = 0;
-        String worldName = a.getLoc().getWorld().getName();
-        if (Prism.prismWorlds.containsKey(worldName)) {
-            worldId = Prism.prismWorlds.get(worldName);
+        int worldId = getWorldId(a);
+        int actionId = getActionId(a);
+        int playerId = getPlayerId(a);
+        if (worldId == 0 || actionId == 0 || playerId == 0) {
+            PrismLogHandler.debug("Sql data error: Handler:" + a);
         }
-        int actionId = 0;
-        if (Prism.prismActions.containsKey(a.getActionType().getName())) {
-            actionId = Prism.prismActions.get(a.getActionType().getName());
-        }
-
-        PrismPlayer prismPlayer = PlayerIdentification.getPrismPlayerByNameFromCache(a.getSourceName());
-        int playerId = prismPlayer.getId();
-
         IntPair newIds = Prism.getItems().materialToIds(a.getMaterial(),
                 Utilities.dataString(a.getBlockData()));
 
@@ -138,40 +155,62 @@ public class SqlInsertBuilder extends QueryBuilder implements InsertQuery {
 
     /**
      * Process the batch.
+     *
      * @throws SQLException on sql errors
      */
     public void processBatch() throws SQLException {
         if (batchStatement == null) {
-            Prism.debug("Batch insert was null");
+            PrismLogHandler.debug("Batch insert was null");
             throw new SQLException("no batch statement configured");
         }
-        batchStatement.executeBatch();
+        long currentTime = System.currentTimeMillis();
+        int[] results = batchStatement.executeBatch();
         batchConnection.commit();
-        Prism.debug("Batch insert was commit: " + System.currentTimeMillis());
+        debugBatch("primary", results, currentTime);
         processExtraData(batchStatement.getGeneratedKeys());
         batchConnection.close();
     }
 
+    private void debugBatch(String name, int[] results, long startTime) {
+        if (Prism.isDebug()) {
+            long time = System.currentTimeMillis();
+            int inserts = results.length;
+            int actual = 0;
+            int line = 0;
+            for (int i : results) {
+                switch (i) {
+                    case Statement.EXECUTE_FAILED -> PrismLogHandler.log(name + "Item " + line + " / " + inserts + " failed to execute");
+                    case Statement.SUCCESS_NO_INFO -> PrismLogHandler.log(name + "Item " + line + " / "
+                            + inserts + " was successful but no info was returned.");
+                    default -> actual = actual + i;
+                }
+                line++;
+            }
+            PrismLogHandler.log(name + " Batch commit was complete @ " + time
+                    + " Taking: " + (time - startTime) + "ms");
+            PrismLogHandler.log(name + " Batch insert contained " + actual + " actual v " + inserts + " actions");
+        }
+    }
+
     /**
      * Process any extra data associated with the ResultSet.
+     *
      * @param keys ResultSet
-     * @throws SQLException SQLException.
      */
-    public void processExtraData(ResultSet keys) throws SQLException {
+    private void processExtraData(ResultSet keys) {
         if (extraDataQueue.isEmpty()) {
             return;
         }
         try (
                 Connection conn = dataSource.getConnection();
-                PreparedStatement s = conn.prepareStatement("INSERT INTO `"
-                        + prefix + "data_extra` (data_id,data) VALUES (?,?)", Statement.RETURN_GENERATED_KEYS)
+                PreparedStatement s = conn.prepareStatement(getExtraDataQuery(), Statement.RETURN_GENERATED_KEYS)
         ) {
             conn.setAutoCommit(false);
             int i = 0;
             while (keys.next()) {
-                // @todo should not happen
+                // todo should not happen
                 if (i >= extraDataQueue.size()) {
-                    Prism.log("Skipping extra data for " + prefix + "data.id " + keys.getLong(1)
+                    PrismLogHandler.log("Skipping extra data for " + prefix + "data.id " + keys.getLong(1)
                             + " because the queue doesn't have data for it.");
                     continue;
                 }
@@ -186,7 +225,7 @@ public class SqlInsertBuilder extends QueryBuilder implements InsertQuery {
                         s.addBatch();
                     }
                 } else {
-                    Prism.debug("Skipping extra data for " + prefix + "data.id " + keys.getLong(1)
+                    PrismLogHandler.debug("Skipping extra data for " + prefix + "data.id " + keys.getLong(1)
                             + " because the queue doesn't have data for it.");
                 }
 
@@ -194,18 +233,19 @@ public class SqlInsertBuilder extends QueryBuilder implements InsertQuery {
             }
 
             // The main delay is here
-            s.executeBatch();
-
+            long startTime = System.currentTimeMillis();
+            int[] results = s.executeBatch();
             if (conn.isClosed()) {
-                Prism.log(
-                        "Prism database error. We have to bail in the middle of building extra "
-                                + "data bulk insert query.");
+                PrismLogHandler.log("Prism database error. We have to bail in the middle of building extra "
+                        + "data bulk insert query.");
             } else {
                 conn.commit();
             }
+            debugBatch("Extra", results, startTime);
+
         } catch (final SQLException e) {
             e.printStackTrace();
-            Prism.getPrismDataSource().handleDataSourceException(e);
+            Prism.getInstance().getPrismDataSource().handleDataSourceException(e);
         }
     }
 
@@ -230,4 +270,9 @@ public class SqlInsertBuilder extends QueryBuilder implements InsertQuery {
                 + "data (epoch,action_id,player_id,world_id,block_id,block_subid,old_block_id,old_block_subid,"
                 + "x,y,z) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
     }
+
+    private String getExtraDataQuery() {
+        return "INSERT INTO " + prefix + "data_extra (data_id,data) VALUES (?,?)";
+    }
+
 }

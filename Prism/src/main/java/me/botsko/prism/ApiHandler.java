@@ -32,7 +32,7 @@ public class ApiHandler {
         Plugin drip = Prism.getInstance().getServer().getPluginManager().getPlugin("DripReporter");
         if (drip != null && drip.isEnabled()) {
             monitor = (DripReporterApi) drip;
-            Prism.log("Prism hooked DripReporterApi instance: " + drip.getName() + " "
+            PrismLogHandler.log("Prism hooked DripReporterApi instance: " + drip.getName() + " "
                     + drip.getDescription().getVersion());
             enabledPlugins.add(drip.getName());
             Prism.getInstance().monitoring = true;
@@ -58,15 +58,15 @@ public class ApiHandler {
             // Easier and foolproof way.
             try {
                 WorldEdit.getInstance().getEventBus().register(new PrismBlockEditHandler());
-                Prism.log("WorldEdit found. Associated features enabled.");
+                PrismLogHandler.log("WorldEdit found. Associated features enabled.");
             } catch (Throwable error) {
-                Prism.log("Required WorldEdit version is 7.1.0 or greater!"
+                PrismLogHandler.log("Required WorldEdit version is 7.1.0 or greater!"
                         + " Certain optional features of Prism disabled.");
-                Prism.debug(error.getMessage());
+                PrismLogHandler.debug(error.getMessage());
             }
 
         } else {
-            Prism.log("WorldEdit not found. Certain optional features of Prism disabled.");
+            PrismLogHandler.log("WorldEdit not found. Certain optional features of Prism disabled.");
         }
     }
 
@@ -92,13 +92,13 @@ public class ApiHandler {
         if (worldEditPlugin != null) {
             try {
                 WorldEdit.getInstance().getEventBus().unregister(new PrismBlockEditHandler());
-                Prism.log("WorldEdit unhooked");
+                PrismLogHandler.log("WorldEdit unhooked");
                 enabledPlugins.remove(worldEditPlugin.getName());
                 worldEditPlugin = null;
                 return true;
             } catch (Throwable error) {
-                Prism.log("We could not unhook worldEdit...was it enabled???");
-                Prism.debug(error.getMessage());
+                PrismLogHandler.log("We could not unhook worldEdit...was it enabled???");
+                PrismLogHandler.debug(error.getMessage());
                 return false;
             }
         } else {
@@ -107,7 +107,7 @@ public class ApiHandler {
     }
 
     static boolean disable() {
-        return disableDripReporterHook() && disableDripReporterHook();
+        return disableDripReporterHook() && disableWorldEditHook();
     }
 
 }

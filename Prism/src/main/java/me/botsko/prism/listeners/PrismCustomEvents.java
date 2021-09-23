@@ -29,7 +29,7 @@ public class PrismCustomEvents implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onCustomPlayerAction(final PrismCustomPlayerActionEvent event) {
-        final List<String> allowedPlugins = plugin.getConfig().getStringList("prism.tracking.api.allowed-plugins");
+        final List<String> allowedPlugins = plugin.config.trackingConfig.allowedPlugins;
         if (allowedPlugins.contains(event.getPluginName())) {
             RecordingQueue.addToQueue(
                     ActionFactory.createPlayer(event.getActionTypeName(), event.getPlayer(), event.getMessage()));

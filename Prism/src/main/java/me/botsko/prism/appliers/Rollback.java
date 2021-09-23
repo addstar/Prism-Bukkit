@@ -4,8 +4,9 @@ import me.botsko.prism.Il8nHelper;
 import me.botsko.prism.Prism;
 import me.botsko.prism.actionlibs.QueryParameters;
 import me.botsko.prism.api.BlockStateChange;
+import me.botsko.prism.api.actions.ActionType;
 import me.botsko.prism.api.actions.Handler;
-import me.botsko.prism.api.commands.Flag;
+import me.botsko.prism.commands.Flags;
 import me.botsko.prism.utils.EntityUtils;
 import me.botsko.prism.utils.block.Utilities;
 import org.bukkit.command.CommandSender;
@@ -39,9 +40,9 @@ public class Rollback extends Preview {
 
         if (player != null) {
             // Remove any fire at this location
-            if (plugin.getConfig().getBoolean("prism.appliers.remove-fire-on-burn-rollback")
+            if (config.applierConfig.removeFireOnBurnRollback
                     && parameters.getActionTypes().containsKey("block-burn")) {
-                if (!parameters.hasFlag(Flag.NO_EXT)) {
+                if (!parameters.hasFlag(Flags.NO_EXT)) {
                     final ArrayList<BlockStateChange> blockStateChanges = Utilities.extinguish(player.getLocation(),
                             parameters.getRadius());
                     if (!blockStateChanges.isEmpty()) {
@@ -52,10 +53,10 @@ public class Rollback extends Preview {
             }
 
             // Remove item drops in this radius
-            if (plugin.getConfig().getBoolean("prism.appliers.remove-drops-on-explode-rollback")
-                    && (parameters.getActionTypes().containsKey("tnt-explode")
-                    || parameters.getActionTypes().containsKey("creeper-explode"))) {
-                if (!parameters.hasFlag(Flag.NO_ITEMCLEAR)) {
+            if (config.applierConfig.removeDropsExplodeRollback && (
+                    parameters.getActionTypes().containsKey(ActionType.TNT_EXPLODE)
+                    || parameters.getActionTypes().containsKey(ActionType.CREEPER_EXPLODE))) {
+                if (!parameters.hasFlag(Flags.NO_ITEMCLEAR)) {
                     final int removed = EntityUtils.removeNearbyItemDrops(player, parameters.getRadius());
                     if (removed > 0) {
                         Prism.messenger.sendMessage(player,Prism.messenger.playerHeaderMsg(
@@ -66,13 +67,13 @@ public class Rollback extends Preview {
 
             // Remove any liquid at this location
             ArrayList<BlockStateChange> drained = null;
-            if (parameters.hasFlag(Flag.DRAIN)) {
+            if (parameters.hasFlag(Flags.DRAIN)) {
                 drained = Utilities.drain(player.getLocation(), parameters.getRadius());
             }
-            if (parameters.hasFlag(Flag.DRAIN_LAVA)) {
+            if (parameters.hasFlag(Flags.DRAIN_LAVA)) {
                 drained = Utilities.drainLava(player.getLocation(), parameters.getRadius());
             }
-            if (parameters.hasFlag(Flag.DRAIN_WATER)) {
+            if (parameters.hasFlag(Flags.DRAIN_WATER)) {
                 drained = Utilities.drainWater(player.getLocation(), parameters.getRadius());
             }
             if (drained != null && drained.size() > 0) {

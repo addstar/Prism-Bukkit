@@ -16,6 +16,7 @@ Prism Commands
    View<commands/view>
    Settings<commands/settings>
    Purge<commands/purge>
+   Debug<commands/debug>
 
 Parameters and Flags
 ^^^^^^^^^^^^^^^^^^^^

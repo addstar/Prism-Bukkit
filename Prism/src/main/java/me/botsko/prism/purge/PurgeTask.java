@@ -1,20 +1,18 @@
 package me.botsko.prism.purge;
 
 import me.botsko.prism.Prism;
+import me.botsko.prism.PrismLogHandler;
 import me.botsko.prism.actionlibs.ActionsQuery;
 import me.botsko.prism.actionlibs.QueryParameters;
 
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class PurgeTask implements Runnable {
-
+class PurgeTask implements Runnable {
 
     private final Prism plugin;
     private final CopyOnWriteArrayList<QueryParameters> paramList;
     private final int purgeTickDelay;
     private final PurgeCallback callback;
-    @SuppressWarnings("FieldCanBeLocal")
-    private int cycleRowsAffected = 0;
     private long minId = 0;
     private long maxId = 0;
 
@@ -26,7 +24,6 @@ public class PurgeTask implements Runnable {
      * @param purgeTickDelay int
      * @param callback Callback
      */
-    @SuppressWarnings("WeakerAccess")
     public PurgeTask(Prism plugin, CopyOnWriteArrayList<QueryParameters> paramList, int purgeTickDelay,
                      PurgeCallback callback) {
         this.plugin = plugin;
@@ -70,11 +67,11 @@ public class PurgeTask implements Runnable {
             }
         }
         boolean cycleComplete = false;
-        cycleRowsAffected = 0;
+        int cycleRowsAffected = 0;
         // We're chunking by IDs instead of using LIMIT because
         // that should be a lot better as far as required record lock counts
         // http://mysql.rjweb.org/doc.php/deletebig
-        int spread = plugin.getConfig().getInt("prism.purge.records-per-batch");
+        int spread = plugin.config.purgeConfig.recordsPerBatch;
         if (spread <= 1) {
             spread = 10000;
         }
@@ -83,58 +80,55 @@ public class PurgeTask implements Runnable {
         long newMinId = Math.min(minId + spread, maxId + 1);
         long startTime = System.nanoTime();
         // Make sure there are rows to potentially delete
+        PurgeManager manager = plugin.getTaskManager().getPurgeManager();
         if (maxId > 0) {
             param.setMinPrimaryKey(minId);
             param.setMaxPrimaryKey(newMinId);
             cycleRowsAffected = aq.delete(param);
-            plugin.totalRecordsAffected += cycleRowsAffected;
+            manager.addToTotalRecords(cycleRowsAffected);
         }
         // If done, remove rule and mark complete
         if (newMinId >= maxId) {
             paramList.remove(param);
             cycleComplete = true;
+
         }
 
-        long cycleTime = (System.nanoTime() - startTime) / 1000000L; // msec
-        plugin.maxCycleTime = Math.max(plugin.maxCycleTime, cycleTime);
-
-        Prism.debug("------------------- ");
-        Prism.debug("params: " + param.getOriginalCommand());
-        Prism.debug("minId: " + minId);
-        Prism.debug("maxId: " + maxId);
-        Prism.debug("newMinId: " + newMinId);
-        Prism.debug("cycleRowsAffected: " + cycleRowsAffected);
-        Prism.debug("cycleComplete: " + cycleComplete);
-        Prism.debug("plugin.total_records_affected: " + plugin.totalRecordsAffected);
-        Prism.debug("-------------------");
+        long cycleTime = (System.nanoTime() - startTime) / 1000000L; //ms
+        plugin.getTaskManager().getPurgeManager().setMaxCycleTime(cycleTime);
+        PrismLogHandler.debug("------------------- ");
+        PrismLogHandler.debug("params: " + param.getOriginalCommand());
+        PrismLogHandler.debug("minId: " + minId);
+        PrismLogHandler.debug("maxId: " + maxId);
+        PrismLogHandler.debug("newMinId: " + newMinId);
+        PrismLogHandler.debug("cycleRowsAffected: " + cycleRowsAffected);
+        PrismLogHandler.debug("cycleComplete: " + cycleComplete);
+        PrismLogHandler.debug("plugin.total_records_affected: " + manager.getTotalRecordsAffected());
+        PrismLogHandler.debug("-------------------");
 
         // Send cycle to callback
-        callback.cycle(param, cycleRowsAffected, plugin.totalRecordsAffected, cycleComplete, plugin.maxCycleTime);
+        callback.cycle(param, cycleRowsAffected, manager.getTotalRecordsAffected(),
+                cycleComplete, manager.getMaxCycleTime());
 
         if (!plugin.isEnabled()) {
-            Prism.log("Can't schedule new purge tasks as plugin is now disabled. "
+            PrismLogHandler.log("Can't schedule new purge tasks as plugin is now disabled. "
                             + "If you're shutting down the server, ignore me.");
             return;
         }
 
         // If cycle is incomplete, reschedule it
         if (!cycleComplete) {
-            plugin.getPurgeManager().deleteTask = plugin.getServer().getScheduler().runTaskLaterAsynchronously(plugin,
-                    new PurgeTask(plugin, paramList, purgeTickDelay, newMinId, maxId, callback), purgeTickDelay);
+            manager.scheduleNewPurgeTask(paramList,purgeTickDelay,newMinId,maxId,callback);
         } else {
             // reset counts
-            plugin.totalRecordsAffected = 0;
-            plugin.maxCycleTime = 0;
-
+            manager.setTotalRecordsAffected(0);
+            manager.resetMaxCycleTime();
             if (paramList.isEmpty()) {
                 return;
             }
-
-            Prism.log("Moving on to next purge rule...");
-
+            PrismLogHandler.log("Moving on to next purge rule...");
             // schedule a new task with next param
-            plugin.getPurgeManager().deleteTask = plugin.getServer().getScheduler().runTaskLaterAsynchronously(plugin,
-                    new PurgeTask(plugin, paramList, purgeTickDelay, callback), purgeTickDelay);
+            manager.scheduleNewPurgeTask(paramList,purgeTickDelay,callback);
         }
     }
 }

@@ -28,7 +28,7 @@ public interface SelectQuery {
     void entityCondition() ;
     void timeCondition() ;
     void keywordCondition() ;
-    void coordinateCondition();
+    void coordinateCondition();DERBY_LOCAL
     String buildWhereConditions();
     String group();
     String order() ;

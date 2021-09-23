@@ -2,6 +2,7 @@ package me.botsko.prism.commands;
 
 import me.botsko.prism.Il8nHelper;
 import me.botsko.prism.Prism;
+import me.botsko.prism.TaskManager;
 import me.botsko.prism.commandlibs.CallInfo;
 import me.botsko.prism.settings.Settings;
 import me.botsko.prism.text.ReplaceableTextComponent;
@@ -41,7 +42,7 @@ public class SetmyCommand extends AbstractCommand {
             return;
         }
 
-        if (!plugin.getConfig().getBoolean("prism.wands.allow-user-override")) {
+        if (!plugin.config.wandConfig.allowUserOverride) {
             Prism.messenger.sendMessage(call.getPlayer(),
                     Prism.messenger.playerError("Sorry, but personalizing the wand is currently not allowed."));
         }
@@ -75,13 +76,27 @@ public class SetmyCommand extends AbstractCommand {
             }
             if (setWandMode != null
                     && (setWandMode.equals("hand") || setWandMode.equals("item") || setWandMode.equals("block"))) {
-                Settings.saveSetting("wand.mode", setWandMode, call.getPlayer());
-                Settings.deleteSetting("wand.item", call.getPlayer());
-                Prism.messenger.sendMessage(call.getPlayer(), Prism.messenger.playerHeaderMsg(
-                        ReplaceableTextComponent.builder("setWandMode")
-                                .replace("<wandMode>", setWandMode,
-                                        Style.style(NamedTextColor.GREEN))
-                                .build()));
+                TaskManager manager = Prism.getInstance().getTaskManager();
+                final String mode = setWandMode;
+                try {
+                    manager.addTask(Settings.saveSettingAsync("wand.mode", mode, call.getPlayer()), result -> {
+                        if (result) {
+                            Prism.messenger.sendMessage(call.getPlayer(), Prism.messenger.playerHeaderMsg(
+                                    ReplaceableTextComponent.builder("setWandMode")
+                                            .replace("<wandMode>", mode,
+                                                    Style.style(NamedTextColor.GREEN))
+                                            .build()));
+                        } else {
+                            Prism.messenger.sendMessage(call.getPlayer(),
+                                    Prism.messenger.playerError(Il8nHelper.getMessage("setmy-wandmode-error")));
+                        }
+                    }, false);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException("Error executing SetMy Command",e);
+                }
+                if (!setWandMode.equals("item")) {
+                    Settings.deleteSettingAsync("wand.item", call.getPlayer());
+                }
                 return;
             }
             Prism.messenger.sendMessage(call.getPlayer(),
@@ -113,7 +128,7 @@ public class SetmyCommand extends AbstractCommand {
                     return;
                 }
 
-                Settings.saveSetting("wand.item", wandString, call.getPlayer());
+                Settings.saveSettingAsync("wand.item", wandString, call.getPlayer());
                 Prism.messenger.sendMessage(call.getPlayer(), Prism.messenger.playerHeaderMsg(
                         ReplaceableTextComponent.builder("wand-item-change").replace("<itemName>", wandString)
                                 .build()));

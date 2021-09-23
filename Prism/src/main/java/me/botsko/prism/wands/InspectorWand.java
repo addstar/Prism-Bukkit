@@ -5,9 +5,11 @@ import me.botsko.prism.Prism;
 import me.botsko.prism.actionlibs.ActionMessage;
 import me.botsko.prism.actionlibs.QueryParameters;
 import me.botsko.prism.actionlibs.QueryResult;
+import me.botsko.prism.api.actions.ActionType;
 import me.botsko.prism.api.actions.MatchRule;
-import me.botsko.prism.api.commands.Flag;
+import me.botsko.prism.commands.Flags;
 import me.botsko.prism.text.ReplaceableTextComponent;
+import me.botsko.prism.utils.MiscUtils;
 import me.botsko.prism.utils.block.Utilities;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
@@ -18,6 +20,7 @@ import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 public class InspectorWand extends QueryWandBase {
 
@@ -76,10 +79,9 @@ public class InspectorWand extends QueryWandBase {
 
             // Ignoring any actions via config?
             if (params.getActionTypes().size() == 0) {
-                @SuppressWarnings("unchecked") final Collection<String> ignoreActions =
-                        (ArrayList<String>) plugin.getConfig().getList("prism.wands.inspect.ignore-actions");
+                final List<ActionType> ignoreActions = plugin.config.wandConfig.wandInspectIgnoreActions;
                 if (ignoreActions != null && !ignoreActions.isEmpty()) {
-                    for (final String ignore : ignoreActions) {
+                    for (final ActionType ignore : ignoreActions) {
                         params.addActionType(ignore, MatchRule.EXCLUDE);
                     }
                 }
@@ -90,7 +92,7 @@ public class InspectorWand extends QueryWandBase {
                 final String blockname = Prism.getItems().getAlias(block.getType(), block.getBlockData());
                 Prism.messenger.sendMessage(player,
                         Prism.messenger.playerHeaderMsg(ReplaceableTextComponent.builder("inspector-wand-header")
-                                .replace("<block>",blockname)
+                                .replace("<blockname>",blockname)
                                 .replace("<x>",loc.getBlockX())
                                 .replace("<y>",loc.getBlockY())
                                 .replace("<z>",loc.getBlockY())
@@ -100,16 +102,19 @@ public class InspectorWand extends QueryWandBase {
                             Prism.messenger.playerHeaderMsg(Il8nHelper.formatMessage("lookup.result.header",
                                     results.getTotalResults(), 1, results.getTotalPages())));
                 }
+                int resultCount = results.getIndexOfFirstResult();
                 for (final me.botsko.prism.api
                         .actions.Handler a : results.getPaginatedActionResults()) {
                     final ActionMessage am = new ActionMessage(a);
-                    if (parameters.hasFlag(Flag.EXTENDED)
-                            || plugin.getConfig().getBoolean("prism.messenger.always-show-extended")) {
+                    if (parameters.hasFlag(Flags.EXTENDED)
+                            || plugin.config.parameterConfig.alwaysShowExtended) {
                         am.showExtended();
                     }
-                    Prism.messenger.sendMessage(player,
-                            Prism.messenger.playerMsg(am.getMessage()));
+                    am.setResultIndex(resultCount);
+                    MiscUtils.sendClickableTpRecord(am, player);
+                    resultCount++;
                 }
+                MiscUtils.sendPageButtons(results, player);
             } else {
                 final String space_name = (block.getType().equals(Material.AIR) ? "space"
                         : block.getType().toString().replaceAll("_", " ").toLowerCase()

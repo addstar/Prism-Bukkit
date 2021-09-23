@@ -5,8 +5,6 @@ import me.botsko.prism.Prism;
 import me.botsko.prism.commandlibs.CallInfo;
 import me.botsko.prism.commandlibs.SubCommand;
 import me.botsko.prism.commandlibs.SubHandler;
-import net.kyori.adventure.audience.Audience;
-import net.kyori.adventure.identity.Identity;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.event.ClickEvent;
@@ -55,25 +53,24 @@ public class HelpCommand implements SubHandler {
      * @param s CommandSender
      */
     protected void help(CommandSender s) {
-        Audience sender = Prism.getAudiences().sender(s);
         if (failed) {
-            sender.sendMessage(Identity.nil(),
-                  Prism.messenger.playerHeaderMsg(Il8nHelper.getMessage("prism-disabled-header")
-                        .color(NamedTextColor.GOLD))
-                        .append(Component.newline())
-                        .append(
-                              Prism.messenger.playerMsg(Il8nHelper.getMessage("prism-disabled-content"))
-                                    .color(NamedTextColor.GOLD))
-                        .append(Component.newline())
-                        .append(
-                              Prism.messenger.playerSubduedHeaderMsg(Il8nHelper.getMessage("discord", ":")
-                                    .color(NamedTextColor.WHITE)
-                                    .append(Component.text(Il8nHelper.getRawMessage("discord-url")))))
-                        .append(Component.newline())
-                        .append(
-                              Prism.messenger.playerSubduedHeaderMsg(Il8nHelper.getMessage("wiki", ":")
-                                    .color(NamedTextColor.WHITE)
-                                    .append(Component.text(Il8nHelper.getRawMessage("wiki-url"))))));
+            Prism.messenger.sendMessage(s,
+                    Prism.messenger.playerHeaderMsg(Il8nHelper.getMessage("prism-disabled-header")
+                            .color(NamedTextColor.GOLD))
+                            .append(Component.newline())
+                            .append(
+                                    Prism.messenger.playerMsg(Il8nHelper.getMessage("prism-disabled-content"))
+                                            .color(NamedTextColor.GOLD))
+                            .append(Component.newline())
+                            .append(
+                                    Prism.messenger.playerSubduedHeaderMsg(Il8nHelper.getMessage("discord", ":")
+                                            .color(NamedTextColor.WHITE)
+                                            .append(Component.text(Il8nHelper.getRawMessage("discord-url")))))
+                            .append(Component.newline())
+                            .append(
+                                    Prism.messenger.playerSubduedHeaderMsg(Il8nHelper.getMessage("wiki", ":")
+                                            .color(NamedTextColor.WHITE)
+                                            .append(Component.text(Il8nHelper.getRawMessage("wiki-url"))))));
             return;
         }
         TextComponent component = Prism.messenger.playerHeaderMsg(
@@ -105,6 +102,6 @@ public class HelpCommand implements SubHandler {
                         .append(Component.newline());
             }
         }
-        sender.sendMessage(Identity.nil(),component);
+        Prism.messenger.sendMessage(s,component);
     }
 }

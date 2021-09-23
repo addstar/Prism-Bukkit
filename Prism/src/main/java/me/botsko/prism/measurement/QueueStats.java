@@ -89,9 +89,9 @@ public class QueueStats {
      */
     public static class TaskRunInfo {
 
-        long records;
-        long batchingTime;
-        long batchProcessTime;
+        final long records;
+        final long batchingTime;
+        final long batchProcessTime;
 
         /**
          * Construct a Task info.

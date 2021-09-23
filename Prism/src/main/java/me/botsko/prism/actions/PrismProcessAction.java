@@ -1,7 +1,9 @@
 package me.botsko.prism.actions;
 
 import me.botsko.prism.Prism;
+import me.botsko.prism.api.actions.ActionType;
 import me.botsko.prism.api.actions.PrismProcessType;
+import me.botsko.prism.serializers.SerializationHelper;
 
 public class PrismProcessAction extends GenericAction {
 
@@ -32,13 +34,13 @@ public class PrismProcessAction extends GenericAction {
 
     @Override
     public String serialize() {
-        return gson().toJson(actionData);
+        return SerializationHelper.gson().toJson(actionData);
     }
 
     @Override
     public void deserialize(String data) {
         if (data != null && !data.isEmpty()) {
-            actionData = gson().fromJson(data, PrismProcessActionData.class);
+            actionData = SerializationHelper.gson().fromJson(data, PrismProcessActionData.class);
         }
     }
 
@@ -46,8 +48,8 @@ public class PrismProcessAction extends GenericAction {
      * Get Type.
      * @return String
      */
-    public String getProcessChildActionType() {
-        return Prism.getActionRegistry().getAction("prism-" + actionData.processType).getName();
+    public ActionType getProcessChildActionType() {
+        return ActionType.getByName("prism-" + actionData.processType);
     }
 
     /**
